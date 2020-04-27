@@ -1,6 +1,7 @@
 #!/bin/bash
 
-prep() {
+prep_setup() {
+  echo "Preparing Setup"
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
     KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
     K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
@@ -24,7 +25,8 @@ prep() {
   echo "Detected $SHELL on $OSTYPE"
 }
 
-install() {
+install_binaries() {
+  echo "Installing management binaries to `pwd`/bin"
   if ! [[ -d "bin" ]]; then
     mkdir bin
   fi
@@ -53,14 +55,67 @@ install() {
   find . -type f -exec chmod +x {} +
 }
 
-start_cluster() {
+install_traefik() {
+  echo "Installing Traefik"
+  #We could also use the k3d built-in traefik helm-chart by removing the --no-deploy=traefik server-arg
+  #Upgrading traefik would be kind of a pain, since I don't know if they actually modified traefik in any way
+  #So we manage the ingress completely outside of k3d 
+  kubectl apply -f ingress/traefik/rbac.yaml -f ingress/traefik/deployment.yaml -f ingress/traefik/dashboard.yaml
+}
+
+install_nginx() {
+  echo "Installing NGinX"
+  kubetl apply -f ingress/nginx/mandatory.yaml 
+}
+
+
+install_tekton() {
+  echo "Installing Tekton-CD"
+  #Install Tekton
+  kubectl apply -f https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+
+  #Install Dashboard
+  kubectl apply -f https://github.com/tektoncd/dashboard/releases/download/v0.6.1/tekton-dashboard-release.yaml
+  kubectl apply -f cd/tekton/basic-dashboard-ingress.yaml
+}
+
+install_drone() {
+  echo "Installing Drone CI"
+}
+
+install_rio() {
+  echo "Installing Rancher RIO"
+  rio install
+}
+
+install_prometheus() {
+  echo "Installing Prometheus"
+  kubectl create namespace monitoring
+  kubectl apply -f observability/prometheus/cluster-role.yaml
+  kubectl apply -f observability/prometheus/config-map.yaml
+  kubectl apply -f observability/prometheus/deployment.yaml
+  kubectl apply -f observability/prometheus/service.yaml
+  kubectl apply -f observability/prometheus/ingress.yaml
+}
+
+install_grafana() {
+  echo "Installing Grafana"
+  kubectl apply -f observability/grafana/dashboard-cfgmap.yaml
+  kubectl apply -f observability/grafana/datasource-configMap.yaml
+  kubectl apply -f observability/grafana/deployment.yaml
+  kubectl apply -f observability/grafana/ingress.yaml
+  kubectl apply -f observability/grafana/service.yaml
+}
+
+start_k3d_cluster() {
+  echo "Starting k3d Cluster"
   k3d create --server-arg="--no-deploy=traefik" --name dev
   echo "wait a bit for k3d to start up"
   sleep 20
 }
 
-config_cluster() {
-
+config_k3d_cluster() {
+  echo "Configuring k3d cluster"
   if [[ "$SHELL" == "WSL" ]]; then
     echo "Converting paths to POSIX, because derp"
     export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')
@@ -72,11 +127,8 @@ config_cluster() {
   fi
 }
 
-install_rio() {
-  rio install
-}
-
-verify() {
+verify_binaries() {
+  echo "Verifying installed binaries"
   kubectl version
   tkn version
   k3d --version
@@ -84,8 +136,9 @@ verify() {
 }
 
 notify_user() {
-  echo "Now export the following lines and you are good to go!"
-  echo "export PATH=$PATH:`pwd`/bin"
+  echo "\nNow export the following lines and you are good to go!"
+  echo 'export PATH=$PATH:`pwd`/bin'
+  echo 'source <(kubectl completion bash)'
   if [[ "$SHELL" == "WSL" ]]; then
     echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')"
   elif [[ "$SHELL" == "BASH" ]]; then
@@ -93,15 +146,24 @@ notify_user() {
   elif [[ "$SHELL" == "MSYS" ]]; then
     echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')"
   fi
+
+  echo $'To access apps behind your ingress, run the following command: '
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik-ingress\"` 8080:80'
+  echo "Tekton Dashbaord is available at http://localhost:8080/tekton/"
+  echo "Traefik Dashboard is available at http://localhost:8080/traefik"
 }
 
 
-
-prep
-install
-start_cluster
-config_cluster
-install_rio
-verify
-run
+prep_setup
+install_binaries
+start_k3d_cluster
+config_k3d_cluster
+install_traefik
+install_prometheus
+install_grafana
+#install_nginx
+#install_rio
+#install_drone
+install_tekton
+verify_binaries
 notify_user

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: grafana
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - image: docker.io/grafana/grafana:5.4.3
+        name: grafana
+        resources: {}
+        env: 
+        - name: GF_SERVER_ROOT_URL
+          value: /grafana
+        - name: GF_SECURITY_ADMIN_USER
+          value: admin
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: admin
+        volumeMounts:
+        - name: datasource-volume
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: dashboard-config-volume 
+          mountPath: /etc/grafana/provisioning/dashboards
+      volumes:
+        - name: datasource-volume
+          configMap:
+            name: grafana-datasource-cfgmap
+        - name: dashboard-config-volume
+          configMap:
+            name: grafana-dashboard-cfgmap
+status: {}
