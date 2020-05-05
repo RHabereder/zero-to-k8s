@@ -38,19 +38,9 @@ After the installation you should get prompts to the Dashboards of Tekton, Tarae
 * [Grafana](https://maven.apache.org/) - Awesome Visualization of Prometheus Data
 * [Prometheus](https://rometools.github.io/rome/) - The Standard Metric Collector
 
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
-
 ## Authors
 
 * **Raphael Habereder** - *Initial work* - [RHabereder](https://github.com/RHabereder)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
 
 ## License
 

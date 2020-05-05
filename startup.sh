@@ -148,9 +148,12 @@ notify_user() {
   fi
 
   echo $'To access apps behind your ingress, run the following command: '
-  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik-ingress\"` 8080:80'
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik-ingress\"` 8080:80 &'
   echo "Tekton Dashbaord is available at http://localhost:8080/tekton/"
   echo "Traefik Dashboard is available at http://localhost:8080/traefik"
+  echo "Prometheus is kinda bugged, so if you want to use the graph UI, you need another port-forward like this:"
+  echo $'kubectl port-forward -n monitoring `kubectl get pods -n monitoring --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^prometheus\"` 9090 &'
+  echo "Afterwards you can look at prometheus via http://localhost:9090/graph"
 }
 
 
