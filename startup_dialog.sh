@@ -84,12 +84,13 @@ choose_ingress() {
 }
 
 choose_tools() {
-  TOOLS=`dialog --checklist "Install Tools" 0 0 5 \
+  TOOLS=`dialog --checklist "Install Tools" 0 0 6 \
         grafana "Open source analytics and monitoring solution for every database" on \
         prometheus "Monitoring system & time series database" on \
         jaeger "Open source, end-to-end distributed tracing" on \
         k8s-dashboard "General purpose, web-based UI for Kubernetes clusters" on \
         rio-dashboard "Rancher RIOs built-in dashboard" off \
+        istio "Connect, secure, control, and observe services with Istio Servicemesh" off \
         3>&1 1>&2 2>&3`
   dialog --clear
   #clear  
@@ -146,6 +147,12 @@ install_rio() {
 install_rio_dashboard() {
   echo "Installing Rancher RIO Dashboard (this might take a while)"
   rio dashboard
+}
+
+install_istio() {
+
+  curl -L https://istio.io/downloadIstio | sh -
+  $PWD/istio-1.5.4/bin/istioctl manifest apply --set profile=demo
 }
 
 install_prometheus() {
@@ -225,7 +232,8 @@ notify_user() {
   echo "Tekton Dashbaord is available at http://localhost:8080/tekton/"
   echo "Traefik Dashboard is available at http://localhost:8080/traefik"
   echo "K8S Dashboard is available at https://localhost:8080/dashboard"
-  echo "Prometheus is kinda bugged, so if you want to use the graph UI, you need another port-forward like this:"
+  echo "To access the various Istio Dashboards, use $PWD/istio-1.5.4/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."
+  echo "Prometheus is kinda bugged right now, so if you want to use the graph UI, you need a port-forward like this:"
   echo $'kubectl port-forward -n monitoring `kubectl get pods -n monitoring --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^prometheus\"` 9090 &'
   echo "Afterwards you can look at prometheus via http://localhost:9090/graph"
 }
@@ -253,7 +261,7 @@ if [[ $INGRESS == "nginx" ]]; then
   install_nginx
 elif [[ $INGRESS == "traefik" ]]; then
   install_traefik
-elif [[ $INGRESS == "istio" ]]; then
+elif [[ $INGRESS == "istio" || $TOOLS == *"istio"* ]]; then
   install_istio
 fi
 
