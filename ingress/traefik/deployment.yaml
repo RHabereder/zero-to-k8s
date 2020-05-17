@@ -30,13 +30,18 @@ spec:
         name: traefik-ingress-lb
         ports:
         - name: http
-          containerPort: 80
+          containerPort: 80          
+        - name: https
+          containerPort: 443
         - name: admin
           containerPort: 8080
         args:
         - --api
         - --kubernetes
         - --logLevel=INFO
+        - --defaultentrypoints=http,https
+        - --entrypoints=Name:https Address::443 TLS
+        - --entrypoints=Name:http Address::80
 ---
 kind: Service
 apiVersion: v1
@@ -50,6 +55,9 @@ spec:
     - protocol: TCP
       port: 80
       name: web
+    - protocol: TCP
+      port: 443
+      name: ssl
     - protocol: TCP
       port: 8080
       name: admin

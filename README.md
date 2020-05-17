@@ -10,23 +10,27 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+What things you need to install the software and how to install them:
 
 ```
-Docker
+Docker 
+If you are lazy, like me, dialog
 ```
 
 ### Installing
 
 A step by step series of examples that tell you how to get a development env running
 
-Fire up the script and you are ready roll
+Look at startup.sh and comment stuff you don't need/want and fire it up
 
 ```
 ./startup.sh
 ```
 
-After the installation you should get prompts to the Dashboards of Tekton, Taraefik, Grafana and more tools.
+For new-comers to linux, or just lazy people like me, install dialog and use startup_dialog.sh
+
+
+After the installation your console should tell you the different URLs you should know about.
 
 
 ## Built With
