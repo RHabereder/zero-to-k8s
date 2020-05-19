@@ -27,8 +27,10 @@ Look at startup.sh and comment stuff you don't need/want and fire it up
 ./startup.sh
 ```
 
-For new-comers to linux, or just lazy people like me, install dialog and use startup_dialog.sh
-
+For new-comers to linux, or just lazy people like me, install dialog and run 
+```
+./startup_dialog.sh
+```
 
 After the installation your console should tell you the different URLs you should know about.
 
