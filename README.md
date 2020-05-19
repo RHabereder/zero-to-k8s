@@ -36,11 +36,16 @@ After the installation your console should tell you the different URLs you shoul
 ## Built With
 
 * [k3d](https://github.com/rancher/k3d) - The Tool used to deploy kubernetes
+* [rancher](https://rancher.com/) - Run Kubernetes Everywhere with Rancher
+* [rancher rio](https://rio.io/) - The Rancher Application Deployment Engine for Kubernetes
 * [TektonCD](https://github.com/tektoncd/pipeline) - The preferred tool to run your ci/cd
 * [Tekton Dashboard](https://github.com/tektoncd/dashboard) - Dashboard for Tekton Pipelines
 * [Traefik](https://traefik.io/) - The Ingress Controller used
 * [Grafana](https://maven.apache.org/) - Awesome Visualization of Prometheus Data
-* [Prometheus](https://rometools.github.io/rome/) - The Standard Metric Collector
+* [Prometheus](https://prometheus.io/) - The Standard Metric Collector
+* [Jaeger](https://www.jaegertracing.io/) - An open source, end-to-end distributed tracing tool
+* [Concourse CI](https://concourse-ci.org/) - An amazing Open Source continuous Thing-Doer
+* [Istio](https://istio.io/) - The defacto standard in terms of Service-Mesh
 
 ## Authors
 
