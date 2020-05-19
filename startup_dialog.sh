@@ -6,35 +6,48 @@ TOOLS=""
 
 prep_setup() {
   echo "Preparing Setup"
-  if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-    K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
-    TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Linux_x86_64.tar.gz"
-    RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.1/rio-linux-amd64"
-    DRONE_URL=""
-    
+  if [[ "$OSTYPE" == "linux-gnu" ]]; then    
     if grep -q Microsoft /proc/version; then
       SHELL="WSL"
+      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
+      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
+      HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
+      DRONE_URL=""
     else
       SHELL="BASH"
+      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Linux_x86_64.tar.gz"
+      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.1/rio-linux-amd64"
+      HELM_URL="https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz"
+      DRONE_URL=""
     fi
-  elif [[ "$OSTYPE" == "msys" ]]; then
+  fi
+
+  if [[ "$OSTYPE" == "msys" ]]; then  
+    SHELL="MSYS"
     KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
     K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
     TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
     RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
-    DRONE_URL=""
-    SHELL="MSYS"
+    HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
   fi
+
+
+  
   echo "Detected $SHELL on $OSTYPE"
 }
 
 install_binaries() {
-  echo "Installing management binaries to `pwd`/bin"
+  echo "Installing management binaries to `pwd`/bin"  
+
   if ! [[ -d "bin" ]]; then
     mkdir bin
   fi
   export PATH=$PATH:`pwd`/bin
+
   if ! [[ -f bin/kubectl ]]; then	  
     curl -L $KUBECTL_URL -o bin/kubectl
   fi
@@ -46,14 +59,27 @@ install_binaries() {
   fi
 
   if ! [[ -f bin/tkn ]]; then	  
-    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    if [[ "$SHELL" == "BASH" ]]; then
       curl -L $TKN_URL | tar xzv tkn
       mv tkn bin/
-    elif [[ "$OSTYPE" == "msys" ]]; then
-      curl -L $TKN_URL | unzip
+    elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
+      curl -L $TKN_URL -o tkn.zip
+      unzip tkn.zip tkn.exe 
       mv tkn.exe bin/tkn
-      rm README LICENSE
+      rm tkn.zip
     fi
+  fi
+
+  if ! [[ -f bin/helm ]]; then	 
+    if [[ "$SHELL" == "BASH" ]]; then    
+      curl -L $HELM_URL | tar xzv tkn
+      mv tkn bin/
+    elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
+      curl -L $HELM_URL -o helm.zip
+      unzip helm.zip windows-amd64/helm.exe 
+      mv windows-amd64/helm.exe bin/helm
+      rm -r helm.zip windows-amd64/
+    fi     
   fi
 
   find . -type f -exec chmod +x {} +
@@ -63,19 +89,21 @@ install_binaries() {
 
 choose_ci() {
   
-  CICD=`dialog --radiolist "Install CI/CD" 0 0 3 \
-        tekton "Kubernetes-native CI/CD" off \
-        rio "Application Deployment Engine for Kubernetes" on \
+  CICD=`dialog --radiolist "Install CI/CD" 0 0 4 \
+        tekton "Kubernetes-native CI/CD" on \
+        rio "Application Deployment Engine for Kubernetes" off \
         drone "Self-service Continuous Delivery platform" off \
+        concourse "An open-source continuous thing-doer" off \
         3>&1 1>&2 2>&3`
   dialog --clear
   #clear
 }
 
 choose_ingress() {
-  INGRESS=`dialog --radiolist "Install Ingress Controller" 0 0 4 \
+  INGRESS=`dialog --radiolist "Install Ingress Controller" 0 0 5 \
             nginx "High Performance Load Balancer" off \
-            traefik "Open-source Edge Router " on \
+            traefik "Open-source Edge Router" off \
+            traefik2 "Traefik in even better!" on \
             istio "An open platform to connect, manage, and secure microservices" off \
             none "For example if you want to use ranchers rdns service, or some awesome tool that is not included yet" off \
             3>&1 1>&2 2>&3`
@@ -102,6 +130,11 @@ install_traefik() {
   #Upgrading traefik would be kind of a pain, since I don't know if they actually modified traefik in any way
   #So we manage the ingress completely outside of k3d 
   kubectl apply -f ingress/traefik/rbac.yaml -f ingress/traefik/deployment.yaml -f ingress/traefik/dashboard.yaml
+}
+
+install_traefik2() {
+  echo "Installing Traefik2" 
+  kubectl apply -f ingress/traefik2/rbac.yaml -f ingress/traefik2/deployment.yaml -f ingress/traefik2/crd.yaml
 }
 
 install_nginx() {
@@ -153,6 +186,12 @@ install_istio() {
 
   curl -L https://istio.io/downloadIstio | sh -
   $PWD/istio-1.5.4/bin/istioctl manifest apply --set profile=demo
+}
+
+install_concourse() {
+  helm repo add concourse https://concourse-charts.storage.googleapis.com
+  helm install concourse concourse/concourse
+  kubectl apply -f cd/concourse/ingressroute.yaml
 }
 
 install_prometheus() {
@@ -207,6 +246,51 @@ install_k8s_dashboard() {
   kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
 }
 
+install_ci() {
+  if [[ $CICD == "tekton" ]]; then
+    install_tekton
+  elif [[ $CICD == "rio" ]]; then
+    install_rio
+  elif [[ $CICD == "drone" ]]; then
+    install_drone
+  elif [[ $CICD == "concourse" ]]; then
+    install_concourse
+  fi
+}
+
+install_ingress() {
+  if [[ $INGRESS == "nginx" ]]; then
+    install_nginx
+  elif [[ $INGRESS == "traefik" ]]; then
+    install_traefik
+  elif [[ $INGRESS == "traefik2" ]]; then
+    install_traefik2
+  elif [[ $INGRESS == "istio" || $TOOLS == *"istio"* ]]; then
+    install_istio
+  fi
+}
+
+install_tools() {
+  if [[ ! -z $TOOLS  ]]; then
+    kubectl create namespace monitoring
+  fi
+  if [[ $TOOLS == *"grafana"* ]]; then
+    install_grafana
+  fi
+  if [[ $TOOLS == *"prometheus"* ]]; then
+    install_prometheus
+  fi
+  if [[ $TOOLS == *"jaeger"* ]]; then
+    install_jaeger
+  fi
+  if [[ $TOOLS == *"k8s-dashboard"* ]]; then
+    install_k8s_dashboard
+  fi
+  if [[ $TOOLS == *"rio-dashboard"* ]]; then
+    install_rio_dashboard
+  fi
+}
+
 verify_binaries() {
   echo "Verifying installed binaries"
   kubectl version
@@ -227,15 +311,24 @@ notify_user() {
     echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')"
   fi
 
+  echo ""
+  echo ""
+  echo ""
   echo $'To access apps behind your ingress, run the following command: '
-  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik-ingress\"` 8080:80 &'
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik\"` 8080:80 8081:8080 &'
+  echo ""
   echo "Tekton Dashbaord is available at http://localhost:8080/tekton/"
   echo "Traefik Dashboard is available at http://localhost:8080/traefik"
-  echo "K8S Dashboard is available at https://localhost:8080/dashboard"
-  echo "To access the various Istio Dashboards, use $PWD/istio-1.5.4/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."
+  echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
+  echo "To access the various Istio Dashboards, use $PWD/istio-1.5.4/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
+  echo ""
   echo "Prometheus is kinda bugged right now, so if you want to use the graph UI, you need a port-forward like this:"
   echo $'kubectl port-forward -n monitoring `kubectl get pods -n monitoring --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^prometheus\"` 9090 &'
   echo "Afterwards you can look at prometheus via http://localhost:9090/graph"
+  echo ""
+  echo "Concourse is also not playing along, it seems to work only on a root path. Nothing another port-forward can't fix!"
+  echo $'kubectl port-forward `kubectl get pods --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^concourse-web\"` <port>:8080 &'
+  echo "The login for concourse is test:test"
 }
 
 
@@ -249,40 +342,9 @@ choose_ci
 choose_ingress
 choose_tools
 
-if [[ $CICD == "tekton" ]]; then
-  install_tekton
-elif [[ $CICD == "rio" ]]; then
-  install_rio
-elif [[ $CICD == "drone" ]]; then
-  install_drone
-fi
-
-if [[ $INGRESS == "nginx" ]]; then
-  install_nginx
-elif [[ $INGRESS == "traefik" ]]; then
-  install_traefik
-elif [[ $INGRESS == "istio" || $TOOLS == *"istio"* ]]; then
-  install_istio
-fi
-
-if [[ ! -z $TOOLS  ]]; then
-  kubectl create namespace monitoring
-fi
-if [[ $TOOLS == *"grafana"* ]]; then
-  install_grafana
-fi
-if [[ $TOOLS == *"prometheus"* ]]; then
-  install_prometheus
-fi
-if [[ $TOOLS == *"jaeger"* ]]; then
-  install_jaeger
-fi
-if [[ $TOOLS == *"k8s-dashboard"* ]]; then
-  install_k8s_dashboard
-fi
-if [[ $TOOLS == *"rio-dashboard"* ]]; then
-  install_rio_dashboard
-fi
+install_ingress
+install_ci
+install_tools
 
 verify_binaries
 notify_user
