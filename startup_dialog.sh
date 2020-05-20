@@ -213,8 +213,16 @@ install_grafana() {
 }
 
 install_jaeger() {
-  echo "Installing Jaeger Tracing"
-  echo "stub"
+  kubectl apply -f observability/jaeger/crd.yaml
+
+  kubectl apply -f observability/jaeger/service_account.yaml \
+                -f observability/jaeger/role.yaml \
+                -f observability/jaeger/role_binding.yaml \
+                -f observability/jaeger/operator.yaml \
+                -f observability/jaeger/cluster_role.yaml \
+                -f observability/jaeger/cluster_role_binding.yaml \
+                -f observability/jaeger/instance.yaml \
+                -f observability/jaeger/ingressroute.yaml
 }
 
 start_k3d_cluster() {
