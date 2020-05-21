@@ -21,12 +21,17 @@ Dialog (If you are lazy, like me)
 
 ### Installing
 
-Look at startup.sh and comment stuff you don't need/want and fire it up in
+Look at startup.sh and comment stuff you don't need/want in
 
 ```
 install_ingress
 install_ci
 install_tools
+```
+
+And fire it ip with 
+```
+./startup.sh
 ```
 
 For new-comers to linux, or just lazy people like me, install dialog with the package-manager of your choice and run 
