@@ -3,6 +3,8 @@
 This project tries to ease the creation of a local Kubernetes environment, including all the awesome devops tools you can possibly need. 
 It should be as easy as a "./startup.sh" to get you up and running and a "k3d delete --name dev" to clean up again. 
 
+If anything you like is missing, hit me up! I l
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
@@ -14,25 +16,25 @@ What things you need to install the software and how to install them:
 
 ```
 Docker 
-If you are lazy, like me, dialog
+Dialog (If you are lazy, like me)
 ```
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
-
-Look at startup.sh and comment stuff you don't need/want and fire it up
+Look at startup.sh and comment stuff you don't need/want and fire it up in
 
 ```
-./startup.sh
+install_ingress
+install_ci
+install_tools
 ```
 
-For new-comers to linux, or just lazy people like me, install dialog and run 
+For new-comers to linux, or just lazy people like me, install dialog with the package-manager of your choice and run 
 ```
 ./startup_dialog.sh
 ```
 
-After the installation your console should tell you the different URLs you should know about.
+After the installation your console should tell you the different URLs you should know about, if I didn't miss anything.
 
 
 ## Built With
@@ -42,7 +44,8 @@ After the installation your console should tell you the different URLs you shoul
 * [rancher rio](https://rio.io/) - The Rancher Application Deployment Engine for Kubernetes
 * [TektonCD](https://github.com/tektoncd/pipeline) - The preferred tool to run your ci/cd
 * [Tekton Dashboard](https://github.com/tektoncd/dashboard) - Dashboard for Tekton Pipelines
-* [Traefik](https://traefik.io/) - The Ingress Controller used
+* [NGINX](https://www.nginx.com/products/nginx/kubernetes-ingress-controller/) - Production-Grade Ingress Controller for Kubernetes
+* [Traefik](https://traefik.io/) - My favorite Ingress Controller and proxy
 * [Grafana](https://maven.apache.org/) - Awesome Visualization of Prometheus Data
 * [Prometheus](https://prometheus.io/) - The Standard Metric Collector
 * [Jaeger](https://www.jaegertracing.io/) - An open source, end-to-end distributed tracing tool
@@ -59,7 +62,11 @@ This project is licensed under the Unlicense - see the [LICENSE.md](LICENSE.md) 
 
 ## Acknowledgments
 
-* Hat tip to Rancher for being awesome and developing awesome software and tools and anyone whose code was reused and changed!
+* Rancher for being awesome and developing awesome software
+* The k8s ecosystem 
+* People that build Helm Charts
+* Everyone that asked the questions I look up on stackoverflow
+* Anyone whose code I reused/changed/used as inspiration!
 
 
 

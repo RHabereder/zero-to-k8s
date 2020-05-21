@@ -280,10 +280,6 @@ install_binaries
 start_k3d_cluster
 config_k3d_cluster
 
-choose_ci
-choose_ingress
-choose_tools
-
 install_ingress
 install_ci
 install_tools
