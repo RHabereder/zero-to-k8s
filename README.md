@@ -29,7 +29,7 @@ install_ci
 install_tools
 ```
 
-And fire it ip with 
+And fire it up with 
 ```
 ./startup.sh
 ```
