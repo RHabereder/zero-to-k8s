@@ -3,7 +3,7 @@
 This project tries to ease the creation of a local Kubernetes environment, including all the awesome devops tools you can possibly need. 
 It should be as easy as a "./startup.sh" to get you up and running and a "k3d delete --name dev" to clean up again. 
 
-If anything you like is missing, hit me up! I l
+If anything you like is missing, hit me up! I love learning new awesome tools!
 
 ## Getting Started
 
