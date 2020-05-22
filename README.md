@@ -19,6 +19,19 @@ Docker
 Dialog (If you are lazy, like me)
 ```
 
+What this script was tested on:
+
+```
+WSL (Frequently, since this is my main driver for development-stuff)
+Ubuntu
+```
+
+What it hopefully runs on one day:
+
+```
+Git Bash/MinGW (This one is pretty hard to support actually... Never thought it would be)
+```
+
 ### Installing
 
 Look at startup.sh and comment stuff you don't need/want in
