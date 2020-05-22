@@ -7,38 +7,28 @@ TOOLS=""
 HOSTS_FILE_LOCATION=""
 
 prep_setup() {
-  echo "Preparing Setup"
-  if [[ "$OSTYPE" == "linux-gnu" ]]; then    
+    echo "Preparing Setup"
+
+  if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if grep -q Microsoft /proc/version; then
-      SHELL="WSL"
-      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
-      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
-      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
-      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
-      HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
-      DRONE_URL=""
+        
+        KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
+        K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
+        TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
+        RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
+        HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
+        DRONE_URL=""
+        SHELL="WSL"
     else
-      SHELL="BASH"
-      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
-      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Linux_x86_64.tar.gz"
-      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.1/rio-linux-amd64"
-      HELM_URL="https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz"
-      DRONE_URL=""
+        SHELL="BASH"
+        KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+        K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
+        TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Linux_x86_64.tar.gz"
+        RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.1/rio-linux-amd64"
+        HELM_URL="https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz"
+        DRONE_URL=""
     fi
   fi
-
-  if [[ "$OSTYPE" == "msys" ]]; then  
-    SHELL="MSYS"
-    KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
-    K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
-    TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
-    RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
-    HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
-  fi
-
-
-  
   echo "Detected $SHELL on $OSTYPE"
 }
 
