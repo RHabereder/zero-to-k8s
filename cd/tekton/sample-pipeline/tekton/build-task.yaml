@@ -1,0 +1,39 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: kaniko-build-push
+spec:
+  inputs:
+    resources:
+    - name: src
+      type: git
+    params:
+    - name: pathToDockerFile
+      description: The path to the dockerfile to build (relative to the context)
+      default: Dockerfile
+    - name: pathToContext
+      description:
+        The path to the build context, used by Kaniko - within the workspace
+        (https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts).
+        The git clone directory is set by the GIT init container which setup
+        the git input resource - see https://github.com/knative/build-pipeline/blob/master/pkg/reconciler/v1alpha1/taskrun/resources/pod.go#L107
+      default: .
+  outputs:
+    resources:
+      - name: builtImage
+        type: image
+  steps:
+  - name: build-and-push
+    image: gcr.io/kaniko-project/executor:debug
+    command: ["/kaniko/executor"]
+    args:
+    - --dockerfile=${inputs.params.pathToDockerFile}
+    - --destination=${outputs.resources.builtImage.url}
+    - --context=/workspace/src/${inputs.params.pathToContext}
+    volumeMounts:
+    - name: kaniko-cache
+      mountPath: /cache
+  volumes:
+  - name: kaniko-cache
+    persistentVolumeClaim:
+      claimName: kaniko-cache-pvc

@@ -1,0 +1,8 @@
+apiVersion: admin.rio.cattle.io/v1
+kind: ClusterDomain
+metadata:
+  name: your.company.com
+spec:
+  secretName: your.company.com-tls 
+  httpPort: 80
+  httpsPort: 443

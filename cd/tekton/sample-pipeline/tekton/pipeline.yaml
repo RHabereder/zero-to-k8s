@@ -1,0 +1,13 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: demo-pipeline
+spec:
+  tasks:
+  - name: say-hello-world
+    taskRef:
+      name: say-hello
+    params:
+    - name: who
+      value: world

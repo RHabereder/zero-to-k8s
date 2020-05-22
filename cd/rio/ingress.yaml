@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: dashboard 
+  namespace: rio-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: PathPrefixStrip
+    traefik.ingress.kubernetes.io/rewrite-target: /
+    ingress.kubernetes.io/protocol: https
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - backend:
+          serviceName: dashboard
+          servicePort: 80
+      - backend:
+          serviceName: dashboard
+          servicePort: 443
+        path: /rio

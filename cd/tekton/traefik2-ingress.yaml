@@ -1,0 +1,26 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: tekton-dashboard-ingress-route
+  namespace: tekton-pipelines
+spec:
+  entryPoints:
+    - http
+  routes:
+  - match: Host(`localhost`) && PathPrefix(`/tekton`)
+    kind: Rule
+    services:
+    - name: tekton-dashboard
+      port: 9097
+    middlewares:
+    - name: tekton-stripprefix
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: tekton-stripprefix
+  namespace: tekton-pipelines
+spec:
+  stripPrefix:
+    prefixes:
+      - /tekton

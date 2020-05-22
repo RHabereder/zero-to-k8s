@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: concourse-web-ingress-route
+  namespace: default
+spec:
+  entryPoints:
+    - http
+  routes:
+  - match: Host(`localhost`) && PathPrefix(`/concourse`)
+    kind: Rule
+    services:
+    - name: concourse-web
+      port: 8080
