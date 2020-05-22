@@ -153,7 +153,10 @@ install_tekton() {
 
   #Install Dashboard
   kubectl apply -f https://github.com/tektoncd/dashboard/releases/download/v0.6.1/tekton-dashboard-release.yaml
-  kubectl apply -f cd/tekton/${INGRESS}-ingress.yaml
+  
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f cd/tekton/${INGRESS}-ingress.yaml
+  fi
 }
 
 install_drone() {
@@ -175,8 +178,10 @@ install_rio() {
   kubectl -n rio-system create secret tls ${localdomain}-tls --cert=${localdomain}.crt --key=${localdomain}.key
 
   sed "s/your.company.com/${localdomain}/g" cd/rio/clusterdomain.yaml | kubectl apply -f -
-  kubectl apply -f cd/rio/${INGRESS}-ingress.yaml
   
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f cd/rio/${INGRESS}-ingress.yaml
+  fi
 
 }
 
@@ -282,7 +287,10 @@ install_k8s_dashboard() {
   kubectl apply -f k8s-dashboard/recommended.yaml
   kubectl apply -f k8s-dashboard/service-account.yaml
   kubectl apply -f k8s-dashboard/cluster-role-binding.yaml
-  kubectl apply -f k8s-dashboard/${INGRESS}-ingress.yaml
+  
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f k8s-dashboard/${INGRESS}-ingress.yaml
+  fi
   kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
 }
 
