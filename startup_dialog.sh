@@ -209,8 +209,8 @@ install_grafana() {
   kubectl apply -f observability/grafana/dashboard-cfgmap.yaml
   kubectl apply -f observability/grafana/datasource-configMap.yaml
   kubectl apply -f observability/grafana/deployment.yaml
-  kubectl apply -f observability/grafana/ingress.yaml
   kubectl apply -f observability/grafana/service.yaml
+  kubectl apply -f observability/grafana/${INGRESS}-ingress.yaml
 }
 
 install_jaeger() {
@@ -251,7 +251,7 @@ install_k8s_dashboard() {
   kubectl apply -f k8s-dashboard/recommended.yaml
   kubectl apply -f k8s-dashboard/service-account.yaml
   kubectl apply -f k8s-dashboard/cluster-role-binding.yaml
-  kubectl apply -f k8s-dashboard/ingress.yaml
+  kubectl apply -f k8s-dashboard/${INGRESS}-ingress.yaml
   kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
 }
 
