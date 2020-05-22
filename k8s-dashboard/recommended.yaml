@@ -39,7 +39,7 @@ metadata:
 spec:
   ports:
     - port: 443
-      targetPort: 8443
+      targetPort: 443
   selector:
     k8s-app: kubernetes-dashboard
 
@@ -190,7 +190,7 @@ spec:
           image: kubernetesui/dashboard:v2.0.0
           imagePullPolicy: Always
           ports:
-            - containerPort: 8443
+            - containerPort: 443
               protocol: TCP
           args:
             - --auto-generate-certificates
@@ -209,7 +209,7 @@ spec:
             httpGet:
               scheme: HTTPS
               path: /
-              port: 8443
+              port: 443
             initialDelaySeconds: 30
             timeoutSeconds: 30
           securityContext:

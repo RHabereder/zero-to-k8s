@@ -1,0 +1,28 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jaeger-query-ingress-route
+  namespace: monitoring
+spec:
+  entryPoints:
+    - http
+  routes:
+  - match: Host(`localhost`) && PathPrefix(`/jaeger`)
+    kind: Rule
+    services:
+    - name: jaeger-query
+      port: 16686
+    
+    #not needed as of now
+    #middlewares:
+    #- name: jaeger-stripprefix
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: jaeger-stripprefix
+  namespace: monitoring
+spec:
+  stripPrefix:
+    prefixes:
+      - /jaeger

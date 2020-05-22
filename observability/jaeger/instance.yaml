@@ -3,3 +3,9 @@ kind: Jaeger
 metadata:
   name: jaeger
   namespace: monitoring
+spec:
+  strategy: allInOne
+  allInOne:
+    options:
+      query:
+        base-path: /jaeger

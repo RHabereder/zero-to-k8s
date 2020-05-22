@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 CI=""
 INGRESS=""
@@ -150,7 +151,7 @@ install_tekton() {
 
   #Install Dashboard
   kubectl apply -f https://github.com/tektoncd/dashboard/releases/download/v0.6.1/tekton-dashboard-release.yaml
-  kubectl apply -f cd/tekton/basic-dashboard-ingress.yaml
+  kubectl apply -f cd/tekton/${INGRESS}-ingress.yaml
 }
 
 install_drone() {
@@ -172,7 +173,7 @@ install_rio() {
   kubectl -n rio-system create secret tls ${localdomain}-tls --cert=${localdomain}.crt --key=${localdomain}.key
 
   sed "s/your.company.com/${localdomain}/g" cd/rio/clusterdomain.yaml | kubectl apply -f -
-  kubectl apply -f cd/rio/ingress.yaml
+  kubectl apply -f cd/rio/${INGRESS}-ingress.yaml
   
 
 }
@@ -191,7 +192,7 @@ install_istio() {
 install_concourse() {
   helm repo add concourse https://concourse-charts.storage.googleapis.com
   helm install concourse concourse/concourse
-  kubectl apply -f cd/concourse/ingressroute.yaml
+  kubectl apply -f cd/concourse/${INGRESS}-ingress.yaml
 }
 
 install_prometheus() {
@@ -200,7 +201,7 @@ install_prometheus() {
   kubectl apply -f observability/prometheus/config-map.yaml
   kubectl apply -f observability/prometheus/deployment.yaml
   kubectl apply -f observability/prometheus/service.yaml
-  kubectl apply -f observability/prometheus/ingress.yaml
+  kubectl apply -f observability/prometheus/${INGRESS}-ingress.yaml
 }
 
 install_grafana() {
@@ -222,7 +223,7 @@ install_jaeger() {
                 -f observability/jaeger/cluster_role.yaml \
                 -f observability/jaeger/cluster_role_binding.yaml \
                 -f observability/jaeger/instance.yaml \
-                -f observability/jaeger/ingressroute.yaml
+                -f observability/jaeger/${INGRESS}-ingress.yaml
 }
 
 start_k3d_cluster() {
@@ -323,10 +324,11 @@ notify_user() {
   echo ""
   echo ""
   echo $'To access apps behind your ingress, run the following command: '
-  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik\"` 8080:80 8081:8080 &'
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik\"` 8080:80 8443:443 8081:8080 &'
   echo ""
   echo "Tekton Dashbaord is available at http://localhost:8080/tekton/"
   echo "Traefik Dashboard is available at http://localhost:8080/traefik"
+  echo "Traefik2 Dashboard is available at http://localhost:8081/dashboard/"
   echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
   echo "To access the various Istio Dashboards, use $PWD/istio-1.5.4/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
   echo ""

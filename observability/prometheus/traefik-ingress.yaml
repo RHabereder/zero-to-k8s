@@ -15,4 +15,4 @@ spec:
       - backend:
           serviceName: prometheus
           servicePort: 9090
-        path: /prometheus/
+        path: /prometheus

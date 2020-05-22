@@ -1,0 +1,26 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kubernetes-dashboard-ingress-route
+  namespace: kubernetes-dashboard
+spec:
+  entryPoints:
+    - https
+  routes:
+  - match: Host(`localhost`) && PathPrefix(`/dashboard`)
+    kind: Rule
+    services:
+    - name: kubernetes-dashboard
+      port: 443
+    middlewares:
+    - name: kubernetes-dashboard-stripprefix
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: kubernetes-dashboard-stripprefix
+  namespace: kubernetes-dashboard
+spec:
+  stripPrefix:
+    prefixes:
+      - /dashboard

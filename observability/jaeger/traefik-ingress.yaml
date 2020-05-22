@@ -1,17 +1,17 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: tekton-dashboard
-  namespace: tekton-pipelines
   annotations:
     kubernetes.io/ingress.class: traefik
     traefik.frontend.rule.type: PathPrefixStrip
+  name: jaeger-query 
+  namespace: monitoring
 spec:
   rules:
   - host: localhost
     http:
       paths:
-      - path: /tekton
-        backend:
-          serviceName: tekton-dashboard
-          servicePort: 9097
+      - backend:
+          serviceName: jaeger-query
+          servicePort: 16686
+        path: /jaeger

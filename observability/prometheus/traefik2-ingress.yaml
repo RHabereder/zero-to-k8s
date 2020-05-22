@@ -1,14 +1,14 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: jaeger-query-ingress-route
+  name: prometheus-ingress-route
   namespace: monitoring
 spec:
   entryPoints:
     - http
   routes:
-  - match: Host(`localhost`) && PathPrefix(`/jaeger`)
+  - match: Host(`localhost`) && PathPrefix(`/prometheus`)
     kind: Rule
     services:
-    - name: jaeger-query
-      port: 16686
+    - name: prometheus
+      port: 9090

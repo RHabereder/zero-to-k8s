@@ -15,22 +15,16 @@ spec:
     spec:
       containers:
         - name: prometheus
-          image: prom/prometheus:v2.2.1
+          image: prom/prometheus:v2.18.1
           args:
+            - "--web.external-url=http://localhost:9090/prometheus/"
             - "--config.file=/etc/prometheus/prometheus.yml"
             - "--storage.tsdb.path=/prometheus/"
-          ports:
-            - containerPort: 9090
           volumeMounts:
             - name: prometheus-config-volume
               mountPath: /etc/prometheus/
             - name: prometheus-storage-volume
               mountPath: /prometheus/
-              #env: 
-              #- name: ARG_WEB_EXTERNAL-URL
-              #  value: http://localhost:9090/prometheus
-              #- name: ARG_WEB_ROUTE-PREFIX
-              # value: /
       volumes:
         - name: prometheus-config-volume
           configMap:
