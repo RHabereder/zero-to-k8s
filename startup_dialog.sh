@@ -4,6 +4,7 @@ set -e
 CI=""
 INGRESS=""
 TOOLS=""
+HOSTS_FILE_LOCATION=""
 
 prep_setup() {
   echo "Preparing Setup"
@@ -113,10 +114,11 @@ choose_ingress() {
 }
 
 choose_tools() {
-  TOOLS=`dialog --checklist "Install Tools" 0 0 6 \
+  TOOLS=`dialog --checklist "Install Tools" 0 0 7 \
         grafana "Open source analytics and monitoring solution for every database" on \
         prometheus "Monitoring system & time series database" on \
         jaeger "Open source, end-to-end distributed tracing" on \
+        registry "A private Docker Registry if you don't have one at hand for testing" on \
         k8s-dashboard "General purpose, web-based UI for Kubernetes clusters" on \
         rio-dashboard "Rancher RIOs built-in dashboard" off \
         istio "Connect, secure, control, and observe services with Istio Servicemesh" off \
@@ -192,43 +194,72 @@ install_istio() {
 install_concourse() {
   helm repo add concourse https://concourse-charts.storage.googleapis.com
   helm install concourse concourse/concourse
-  kubectl apply -f cd/concourse/${INGRESS}-ingress.yaml
+
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f cd/concourse/${INGRESS}-ingress.yaml
+  fi
 }
 
 install_prometheus() {
   echo "Installing Prometheus"
-  kubectl apply -f observability/prometheus/cluster-role.yaml
-  kubectl apply -f observability/prometheus/config-map.yaml
-  kubectl apply -f observability/prometheus/deployment.yaml
-  kubectl apply -f observability/prometheus/service.yaml
-  kubectl apply -f observability/prometheus/${INGRESS}-ingress.yaml
+  kubectl apply -f observability/prometheus/cluster-role.yaml \
+                -f observability/prometheus/config-map.yaml \
+                -f observability/prometheus/deployment.yaml \
+                -f observability/prometheus/service.yaml \
+
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f observability/prometheus/${INGRESS}-ingress.yaml
+  fi
 }
 
 install_grafana() {
   echo "Installing Grafana"
-  kubectl apply -f observability/grafana/dashboard-cfgmap.yaml
-  kubectl apply -f observability/grafana/datasource-configMap.yaml
-  kubectl apply -f observability/grafana/deployment.yaml
-  kubectl apply -f observability/grafana/service.yaml
-  kubectl apply -f observability/grafana/${INGRESS}-ingress.yaml
+  kubectl apply -f observability/grafana/dashboard-cfgmap.yaml \
+                -f observability/grafana/datasource-configMap.yaml \
+                -f observability/grafana/deployment.yaml \
+                -f observability/grafana/service.yaml \
+
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f observability/grafana/${INGRESS}-ingress.yaml
+  fi
 }
 
 install_jaeger() {
   kubectl apply -f observability/jaeger/crd.yaml
-
+  #Wait a sec, so you don't get "no matches for kind "Jaeger" in version "jaegertracing.io/v1"
+  sleep 1
   kubectl apply -f observability/jaeger/service_account.yaml \
                 -f observability/jaeger/role.yaml \
                 -f observability/jaeger/role_binding.yaml \
                 -f observability/jaeger/operator.yaml \
                 -f observability/jaeger/cluster_role.yaml \
                 -f observability/jaeger/cluster_role_binding.yaml \
-                -f observability/jaeger/instance.yaml \
-                -f observability/jaeger/${INGRESS}-ingress.yaml
+                -f observability/jaeger/instance.yaml 
+
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f observability/jaeger/${INGRESS}-ingress.yaml
+  fi
 }
 
 start_k3d_cluster() {
   echo "Starting k3d Cluster"
-  k3d create --server-arg="--no-deploy=traefik" --name dev
+
+  if [[ $TOOLS == *"registry"* ]]; then
+    k3d create --server-arg="--no-deploy=traefik" --enable-registry --name dev
+
+    if [[ "$SHELL" == "BASH" ]]; then
+      HOSTS_FILE_LOCATION="/etc/hosts"
+    elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
+      HOSTS_FILE_LOCATION="C:\\Windows\\system32\\drivers\\etc\\hosts"
+    fi
+    echo "Things to do to use the local registry: "
+    echo "1) Make sure to push your images to registry.local:5000/some/awesomeimage:tag"
+    echo "2) Add \"127.0.0.1  registry.local\" to your hosts file at $HOSTS_FILE_LOCATION"
+    echo "3) Add registry.local:5000 to your Docker Daemons insecure-registries array"
+  else
+    k3d create --server-arg="--no-deploy=traefik" --name dev
+  fi
+  
   #k3d create --server-arg="--no-deploy=traefik" --name dev --api-port 6550 --publish 80:80 --publish 443:443 --publish 9443:9443 --publish 9080:9080
   echo "wait a bit for k3d to start up"
   sleep 20
@@ -341,12 +372,12 @@ notify_user() {
 prep_setup
 install_binaries
 
-start_k3d_cluster
-config_k3d_cluster
-
 choose_ci
 choose_ingress
 choose_tools
+
+start_k3d_cluster
+config_k3d_cluster
 
 install_ingress
 install_ci
