@@ -29,7 +29,7 @@ Ubuntu
 What it hopefully runs on one day:
 
 ```
-Git Bash/MinGW (This one is pretty hard to support actually... Never thought it would be)
+Git Bash/MinGW (This one is pretty hard to work with actually. It randomly dislikes rm'ing stuff and borks the permissions so a relog is needed)
 ```
 
 ### Installing
@@ -69,6 +69,7 @@ After the installation your console should tell you the different URLs you shoul
 * [Jaeger](https://www.jaegertracing.io/) - An open source, end-to-end distributed tracing tool
 * [Concourse CI](https://concourse-ci.org/) - An amazing Open Source continuous Thing-Doer
 * [Istio](https://istio.io/) - The defacto standard in terms of Service-Mesh
+* Hopefully even more in the future!
 
 ## Authors
 
