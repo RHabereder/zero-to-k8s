@@ -74,8 +74,8 @@ install_binaries() {
 
   if ! [[ -f bin/helm ]]; then	 
     if [[ "$SHELL" == "BASH" ]]; then    
-      curl -L $HELM_URL | tar xzv tkn
-      mv tkn bin/
+      curl -L $HELM_URL | tar xzv linux-amd64/helm
+      mv helm bin/
     elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
       curl -L $HELM_URL -o helm.zip
       unzip helm.zip windows-amd64/helm.exe 
