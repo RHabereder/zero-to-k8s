@@ -332,11 +332,7 @@ notify_user() {
   echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
   echo "To access the various Istio Dashboards, use $PWD/istio-1.5.4/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
   echo ""
-  echo "Prometheus is kinda bugged right now, so if you want to use the graph UI, you need a port-forward like this:"
-  echo $'kubectl port-forward -n monitoring `kubectl get pods -n monitoring --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^prometheus\"` 9090 &'
-  echo "Afterwards you can look at prometheus via http://localhost:9090/graph"
-  echo ""
-  echo "Concourse is also not playing along, it seems to work only on a root path. Nothing another port-forward can't fix!"
+  echo "Concourse is not playing along right now, it seems to work only on a root path. Nothing another port-forward can't fix!"
   echo $'kubectl port-forward `kubectl get pods --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^concourse-web\"` <port>:8080 &'
   echo "The login for concourse is test:test"
 }
