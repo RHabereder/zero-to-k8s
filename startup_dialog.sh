@@ -345,12 +345,8 @@ notify_user() {
   echo "Now export the following lines and you are good to go!"
   echo 'export PATH=$PATH:`pwd`/bin'
   echo 'source <(kubectl completion bash)'
-  if [[ "$SHELL" == "WSL" ]]; then
-    echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')"
-  elif [[ "$SHELL" == "BASH" ]]; then
+  if [[ "$SHELL" == "BASH" ]]; then
     echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev)"
-  elif [[ "$SHELL" == "MSYS" ]]; then
-    echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')"
   fi
 
   echo ""
