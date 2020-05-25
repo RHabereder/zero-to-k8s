@@ -5,7 +5,7 @@ CI=""
 INGRESS=""
 TOOLS=""
 HOSTS_FILE_LOCATION=""
-
+ISTIO_VERSION=1.5.4
 prep_setup() {
     echo "Preparing Setup"
 
@@ -182,9 +182,9 @@ install_rio_dashboard() {
 }
 
 install_istio() {
-
-  curl -L https://istio.io/downloadIstio | sh -
-  $PWD/istio-1.5.4/bin/istioctl manifest apply --set profile=demo
+  
+  curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
+  $PWD/istio-${ISTIO_VERSION}/bin/istioctl manifest apply --set profile=demo
 }
 
 install_concourse() {
@@ -353,13 +353,21 @@ notify_user() {
   echo ""
   echo ""
   echo $'To access apps behind your ingress, run the following command: '
+  if [[ $INGRESS == "nginx" ]]; then
+  echo $'kubectl port-forward -n ingress-nginx `kubectl get pods -n ingress-nginx --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^nginx-ingress\"` 8080:80 8443:443 &'
+  elif [[ $INGRESS == "traefik" ]]; then
   echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik\"` 8080:80 8443:443 8081:8080 &'
-  echo ""
-  echo "Tekton Dashbaord is available at http://localhost:8080/tekton/"
   echo "Traefik Dashboard is available at http://localhost:8080/traefik"
+  elif [[ $INGRESS == "traefik2" ]]; then
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik\"` 8080:80 8443:443 8081:8080 &'
   echo "Traefik2 Dashboard is available at http://localhost:8081/dashboard/"
+  elif [[ $INGRESS == "istio" ]]; then
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n istio-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^istio-ingressgateway\"` 8080:80 8443:443 8081:8080 &'
+  echo "To access the various Istio Dashboards, use $PWD/istio-${ISTIO_VERSION}/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
+  fi
+
+  echo "Tekton Dashboard is available at http://localhost:8080/tekton/"
   echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
-  echo "To access the various Istio Dashboards, use $PWD/istio-1.5.4/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
   echo ""
   echo "Concourse is not playing along right now, it seems to work only on a root path. Nothing another port-forward can't fix!"
   echo $'kubectl port-forward `kubectl get pods --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^concourse-web\"` <port>:8080 &'
