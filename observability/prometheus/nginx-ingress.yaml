@@ -1,0 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  name: prometheus 
+  namespace: monitoring
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - backend:
+          serviceName: prometheus
+          servicePort: 9090
+        path: /prometheus(/|$)(.*)
