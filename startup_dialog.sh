@@ -264,8 +264,11 @@ start_k3d_cluster() {
 config_k3d_cluster() {
   echo "Configuring k3d cluster"
   if [[ "$SHELL" == "WSL" ]]; then
-    echo "Converting paths to POSIX, because derp"
-    export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')
+    echo "Need to create %USERPROFILE%/.kube/config, because somehow kubectl is now broken"
+    WINHOME=$(wslpath $(cmd.exe /c "<nul set /p=%UserProfile%" 2>/dev/null))
+    mkdir -p $WINHOME/.kube
+    cp $(wslpath -u $(k3d get-kubeconfig --name dev)) $WINHOME/.kube/config
+    export KUBECONFIG=$WINHOME/.kube/config
   elif [[ "$SHELL" == "BASH" ]]; then
     export KUBECONFIG=$(k3d get-kubeconfig --name dev)
   elif [[ "$SHELL" == "MSYS" ]]; then
@@ -342,12 +345,8 @@ notify_user() {
   echo "Now export the following lines and you are good to go!"
   echo 'export PATH=$PATH:`pwd`/bin'
   echo 'source <(kubectl completion bash)'
-  if [[ "$SHELL" == "WSL" ]]; then
-    echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')"
-  elif [[ "$SHELL" == "BASH" ]]; then
+  if [[ "$SHELL" == "BASH" ]]; then
     echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev)"
-  elif [[ "$SHELL" == "MSYS" ]]; then
-    echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')"
   fi
 
   echo ""
