@@ -34,12 +34,17 @@ Git Bash/MinGW (This one is pretty hard to work with actually. It randomly disli
 
 ### Installing
 
-Look at startup.sh and comment stuff you don't need/want in
+Edit startup.sh and add/remove stuff you need/want in
 
 ```
-install_ingress
-install_ci
-install_tools
+#Possible Single Values: tekton,rio,drone,concourse
+CI="tekton"
+
+#Possible Single Values: traefik,traefik2,nginx,istio,none
+INGRESS="traefik2"
+
+#Possible values: (Spaced-Delimited Multiple possible): prometheus grafana jaeger registry k8s-dashboard rio-dashboard istio
+TOOLS="prometheus grafana jaeger registry k8s-dashboard"
 ```
 
 And fire it up with 
