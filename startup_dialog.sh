@@ -133,7 +133,7 @@ install_traefik2() {
 
 install_nginx() {
   echo "Installing NGinX"
-  kubetcl apply -f ingress/nginx/mandatory.yaml 
+  kubectl apply -f ingress/nginx/mandatory.yaml 
 }
 
 

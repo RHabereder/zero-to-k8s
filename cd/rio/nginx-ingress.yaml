@@ -1,0 +1,20 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: dashboard 
+  namespace: rio-system
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    ingress.kubernetes.io/protocol: https
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - backend:
+          serviceName: dashboard
+          servicePort: 80
+      - backend:
+          serviceName: dashboard
+          servicePort: 443
+        path: /rio(/|$)(.*)
