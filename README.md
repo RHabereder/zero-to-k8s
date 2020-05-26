@@ -59,6 +59,14 @@ For new-comers to linux, or just lazy people like me, install dialog with the pa
 
 After the installation your console should tell you the different URLs you should know about, if I didn't miss anything.
 
+## What doesn't work yet / is incomplete or a todo?
+* Istio Gateway Stuff
+    To be honest, I don't fully understand how the Istio Ingress works yet, it just seems much more complicated than traefik/nginx (it's still envoy) which would explain it's brutal amounts of configuration/documentation. 
+    I will try to fix the istio ingresses as soon as I get a grasp on how it works
+* Concourse
+    I want to blame it on concourse, since they don't have an explicit option to configure a proxypath/context-path, but that could be on me too. Documentation get's tough to read after a few hours of struggling and I could have easily missed it too.
+* Sample Pipelines for the CD Tools
+    Not really a priority as of now, but it would be a nice to have if there were easy to copy files/descriptors for the various CD tools
 
 ## Built With
 

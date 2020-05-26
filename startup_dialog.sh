@@ -185,6 +185,7 @@ install_istio() {
   
   curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
   $PWD/istio-${ISTIO_VERSION}/bin/istioctl manifest apply --set profile=demo
+  cp $PWD/istio-${ISTIO_VERSION}/bin/istioctl $PWD/bin/
 }
 
 install_concourse() {
