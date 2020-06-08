@@ -7,28 +7,36 @@ TOOLS=""
 HOSTS_FILE_LOCATION=""
 ISTIO_VERSION=1.5.4
 prep_setup() {
-    echo "Preparing Setup"
+  echo "Preparing Setup"
 
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if grep -q Microsoft /proc/version; then
-        
-        KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
-        K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
-        TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
-        RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
-        HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
-        DRONE_URL=""
-        SHELL="WSL"
+      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
+      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
+      HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
+      DRONE_URL=""
+      SHELL="WSL"
     else
-        SHELL="BASH"
-        KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-        K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
-        TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Linux_x86_64.tar.gz"
-        RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.1/rio-linux-amd64"
-        HELM_URL="https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz"
-        DRONE_URL=""
+      SHELL="BASH"
+      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Linux_x86_64.tar.gz"
+      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.1/rio-linux-amd64"
+      HELM_URL="https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz"
+      DRONE_URL=""
     fi
+  elif [[ $OSTYPE == "darwin"* ]]; then
+    KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
+    K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-darwin-amd64"
+    TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Darwin_x86_64.tar.gz"
+    RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-darwin-amd64"
+    HELM_URL="https://get.helm.sh/helm-v3.2.1-darwin-amd64.tar.gz"
+    DRONE_URL=""
+    SHELL="ZSH"
   fi
+
   echo "Detected $SHELL on $OSTYPE"
 }
 
@@ -41,6 +49,7 @@ install_binaries() {
   export PATH=$PATH:`pwd`/bin
 
   if ! [[ -f bin/kubectl ]]; then	  
+    echo $KUBECTL_URL
     curl -L $KUBECTL_URL -o bin/kubectl
   fi
   if ! [[ -f bin/k3d ]]; then	  
@@ -51,7 +60,7 @@ install_binaries() {
   fi
 
   if ! [[ -f bin/tkn ]]; then	  
-    if [[ "$SHELL" == "BASH" ]]; then
+    if [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
       curl -L $TKN_URL | tar xzv tkn
       mv tkn bin/
     elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
@@ -63,10 +72,15 @@ install_binaries() {
   fi
 
   if ! [[ -f bin/helm ]]; then	 
-    if [[ "$SHELL" == "BASH" ]]; then    
-      curl -L $HELM_URL | tar xzv linux-amd64/helm
-      mv linux-amd64/helm bin/
-      rmdir linux-amd64
+    if [[ "$SHELL" == "BASH" || $SHELL == "ZSH" ]]; then
+      if [[ "$SHELL" == "ZSH" ]]; then
+        DISTRI="darwin"
+      elif [[ "$SHELL" == "ZSH" ]]; then 
+        DISTRI="linux"
+      fi
+      curl -L $HELM_URL | tar xzv ${DISTRI}-amd64/helm
+      mv ${DISTRI}-amd64/helm bin/
+      rmdir ${DISTRI}-amd64
     elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
       curl -L $HELM_URL -o helm.zip
       unzip helm.zip windows-amd64/helm.exe 
@@ -244,7 +258,7 @@ start_k3d_cluster() {
   if [[ $TOOLS == *"registry"* ]]; then
     k3d create --server-arg="--no-deploy=traefik" --enable-registry --name dev
 
-    if [[ "$SHELL" == "BASH" ]]; then
+    if [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
       HOSTS_FILE_LOCATION="/etc/hosts"
     elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
       HOSTS_FILE_LOCATION="C:\\Windows\\system32\\drivers\\etc\\hosts"
@@ -270,7 +284,7 @@ config_k3d_cluster() {
     mkdir -p $WINHOME/.kube
     cp $(wslpath -u $(k3d get-kubeconfig --name dev)) $WINHOME/.kube/config
     export KUBECONFIG=$WINHOME/.kube/config
-  elif [[ "$SHELL" == "BASH" ]]; then
+  elif [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
     export KUBECONFIG=$(k3d get-kubeconfig --name dev)
   elif [[ "$SHELL" == "MSYS" ]]; then
     echo "Converting paths to POSIX, because derp"

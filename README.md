@@ -24,6 +24,7 @@ What this script was tested on:
 ```
 WSL (Frequently, since this is my main driver for development-stuff)
 Ubuntu
+MacOS 10.15
 ```
 
 What it hopefully runs on one day:
