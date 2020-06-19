@@ -1,7 +1,15 @@
 #!/bin/bash
 set -e
 
-CI=""
+trap cleanup SIGINT
+
+#Global K3D Args for k3d create $K3D_ARGS
+K3D_ARGS='--server-arg="--no-deploy=traefik" --name dev'
+
+# If you want to mount some files through, K3D can bindmount a dir for you in $PWD/$K3D_MOUNT_DIR
+# Currently used only for tekton pipelines
+K3D_MOUNT_DIR="k3dshare"
+CICD=""
 INGRESS=""
 TOOLS=""
 HOSTS_FILE_LOCATION=""
@@ -253,10 +261,9 @@ install_jaeger() {
 }
 
 start_k3d_cluster() {
-  echo "Starting k3d Cluster"
 
   if [[ $TOOLS == *"registry"* ]]; then
-    k3d create --server-arg="--no-deploy=traefik" --enable-registry --name dev
+    K3D_ARGS="$K3D_ARGS --enable-registry"
 
     if [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
       HOSTS_FILE_LOCATION="/etc/hosts"
@@ -267,12 +274,13 @@ start_k3d_cluster() {
     echo "1) Make sure to push your images to registry.local:5000/some/awesomeimage:tag"
     echo "2) Add \"127.0.0.1  registry.local\" to your hosts file at $HOSTS_FILE_LOCATION"
     echo "3) Add registry.local:5000 to your Docker Daemons insecure-registries array"
-  else
-    k3d create --server-arg="--no-deploy=traefik" --name dev
   fi
-  
-  #k3d create --server-arg="--no-deploy=traefik" --name dev --api-port 6550 --publish 80:80 --publish 443:443 --publish 9443:9443 --publish 9080:9080
-  echo "wait a bit for k3d to start up"
+  if [[ $CICD == *"tekton"* ]]; then
+    mkdir -p $PWD/$K3D_MOUNT_DIR
+    K3D_ARGS="$K3D_ARGS --volume $PWD/$K3D_MOUNT_DIR:/var/k3dshare/"
+  fi
+  echo "Starting k3d Cluster with args: $K3D_ARGS"
+  k3d create $K3D_ARGS  echo "wait a bit for k3d to start up"
   sleep 20
 }
 
@@ -389,6 +397,14 @@ notify_user() {
   echo "The login for concourse is test:test"
 }
 
+
+cleanup() {
+  echo "Caught CTRL+C, aborting and cleaning up"
+  k3d delete --name local
+  if [[ -d $PWD/$K3D_MOUNT_DIR ]]; then
+    rm -rf $PWD/$K3D_MOUNT_DIR
+  fi
+}
 
 prep_setup
 install_binaries
