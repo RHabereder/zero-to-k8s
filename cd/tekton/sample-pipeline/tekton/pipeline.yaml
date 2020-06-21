@@ -1,13 +1,71 @@
----
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: demo-pipeline
+  name: build-and-deploy-pipeline
 spec:
+  workspaces:
+    - name: git-source
+      description: The git repo
+  params:
+    - name: gitUrl
+      description: Git repository url
+    - name: gitRevision
+      description: Git revision to check out
+      default: master
+    - name: pathToContext
+      description: The path to the build context, used by Kaniko - within the workspace
+      default: .
+    - name: pathToYamlFile
+      description: The path to the yaml file to deploy within the git source
+    - name: imageUrl
+      description: Image name including repository
+    - name: imageTag
+      description: Image tag
+      default: "latest"
+    - name: configName
+      description: Name of the config-volume containing yaml-files for kubectl
+      default: service-config
   tasks:
-  - name: say-hello-world
-    taskRef:
-      name: say-hello
-    params:
-    - name: who
-      value: world
+    - name: clone-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: git-source
+      params:
+        - name: url
+          value: "$(params.gitUrl)"
+        - name: revision
+          value: "$(params.gitRevision)"
+        - name: subdirectory
+          value: "."
+        - name: deleteExisting
+          value: "true"
+    - name: build-image
+      taskRef:
+        name: kaniko
+      runAfter:
+        - clone-repo
+      workspaces:
+        - name: source
+          workspace: git-source
+      params:
+        - name: CONTEXT
+          value: $(params.pathToContext)
+        - name: IMAGE
+          value: $(params.imageUrl):$(params.imageTag)
+    - name: deploy-to-cluster
+      taskRef:
+        name: deploy-using-kubectl
+      workspaces:
+        - name: git-source
+          workspace: git-source
+      params:
+        - name: pathToYamlFile
+          value: $(params.pathToYamlFile)
+        - name: imageUrl
+          value: $(params.imageUrl)
+        - name: imageTag
+          value: $(params.imageTag)
+        - name: imageDigest
+          value: $(tasks.build-image.results.IMAGE-DIGEST)

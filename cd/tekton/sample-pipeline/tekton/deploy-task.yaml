@@ -1,0 +1,36 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-using-kubectl
+spec:
+  workspaces:
+    - name: git-source
+      description: The git repo
+  params:
+    - name: pathToYamlFile
+      description: The path to the yaml file to deploy within the git source
+    - name: imageUrl
+      description: Image name including repository
+    - name: imageTag
+      description: Image tag
+      default: "latest"
+    - name: imageDigest
+      description: Digest of the image to be used.
+  steps:     
+    - name: update-yaml
+      image: alpine
+      command: ["sed"]
+      args:
+        - "-i"
+        - "-e"
+        - "s;__IMAGE__;$(params.imageUrl):$(params.imageTag);g"
+        - "-e"
+        - "s;__DIGEST__;$(params.imageDigest);g"
+        - "$(workspaces.git-source.path)/$(params.pathToYamlFile)"  
+    - name: run-kubectl
+      image: lachlanevenson/k8s-kubectl
+      command: ["kubectl"]
+      args:
+        - "apply"
+        - "-f"
+        - "$(workspaces.git-source.path)/$(params.pathToYamlFile)"  
