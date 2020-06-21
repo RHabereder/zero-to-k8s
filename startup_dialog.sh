@@ -170,6 +170,13 @@ install_tekton() {
   if [[ ! "$INGRESS" == "none" ]]; then
     kubectl apply -f cd/tekton/${INGRESS}-ingress.yaml
   fi
+
+  kubectl apply -f cd/tekton/sample-pipeline/k8s/svc-account.yaml \
+                -f cd/tekton/sample-pipeline/k8s/svc-credentials.yaml \
+                -f cd/tekton/sample-pipeline/tekton/build-task.yaml \
+                -f cd/tekton/sample-pipeline/tekton/deploy-task.yaml \
+                -f cd/tekton/sample-pipeline/tekton/git-task.yaml \
+                -f cd/tekton/sample-pipeline/tekton/pipeline.yaml
 }
 
 install_drone() {
@@ -284,6 +291,10 @@ start_k3d_cluster() {
   sleep 20
 }
 
+patch_coredns() {
+  kubectl -n kube-system patch cm coredns --patch "$(sed "s/REGISTRY_IP/$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' /k3d-registry)/g" tools/registry/patch_coredns.yaml)"
+}
+
 config_k3d_cluster() {
   echo "Configuring k3d cluster"
   if [[ "$SHELL" == "WSL" ]]; then
@@ -297,6 +308,10 @@ config_k3d_cluster() {
   elif [[ "$SHELL" == "MSYS" ]]; then
     echo "Converting paths to POSIX, because derp"
     export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')
+  fi
+
+  if [[ $TOOLS == *"registry"* ]]; then
+    patch_coredns
   fi
 }
 

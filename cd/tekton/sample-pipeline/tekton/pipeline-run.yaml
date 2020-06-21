@@ -1,9 +1,31 @@
----
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: demo-pipeline-run-1
+  generateName: thanera-pr-
 spec:
   pipelineRef:
-    name: demo-pipeline
-  serviceAccount: 'default'
+    name: build-and-deploy-pipeline
+  params:
+    - name: gitUrl
+      value: https://gitlab.thanera.com/oss/nginx
+    - name: gitRevision
+      value: master
+    - name: pathToYamlFile
+      value: app.yaml
+    - name: configName
+      value: service-config
+    - name: imageUrl
+      value: registry.local:5000/nginx-alpine
+    - name: imageTag
+      value: "1.0"
+  serviceAccountName: pipeline-account
+  workspaces:
+    - name: git-source
+      volumeClaimTemplate:
+          metadata:
+            name: ws-pvc
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+               requests:
+                  storage: 10Gi
