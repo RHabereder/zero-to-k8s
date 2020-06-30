@@ -104,8 +104,9 @@ install_binaries() {
 
 choose_ci() {
   
-  CICD=`dialog --radiolist "Install CI/CD" 0 0 4 \
+  CICD=`dialog --radiolist "Install CI/CD" 0 0 5 \
         tekton "Kubernetes-native CI/CD" on \
+        argocd "Declarative GitOps CD for Kubernetes" off \
         rio "Application Deployment Engine for Kubernetes" off \
         drone "Self-service Continuous Delivery platform" off \
         concourse "An open-source continuous thing-doer" off \
@@ -178,6 +179,18 @@ install_tekton() {
                 -f cd/tekton/sample-pipeline/tekton/deploy-task.yaml \
                 -f cd/tekton/sample-pipeline/tekton/git-task.yaml \
                 -f cd/tekton/sample-pipeline/tekton/pipeline.yaml
+}
+
+install_argocd() {
+  kubectl create namespace argocd
+  kubectl apply -n argocd -f cd/argocd/config.yaml \
+                          -f cd/argocd/secrets.yaml \
+                          -f cd/argocd/roles.yaml \
+                          -f cd/argocd/deployment.yaml \
+                          -f cd/argocd/service.yaml 
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f cd/argocd/${INGRESS}-ingress.yaml
+  fi
 }
 
 install_drone() {
@@ -342,6 +355,8 @@ install_ci() {
     install_tekton
   elif [[ $CICD == "rio" ]]; then
     install_rio
+  elif [[ $CICD == "argocd" ]]; then
+    install_argocd
   elif [[ $CICD == "drone" ]]; then
     install_drone
   elif [[ $CICD == "concourse" ]]; then
@@ -418,12 +433,17 @@ notify_user() {
   echo "To access the various Istio Dashboards, use $PWD/istio-${ISTIO_VERSION}/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
   fi
 
+if [[ $CICD == "tekton" ]]; then
   echo "Tekton Dashboard is available at http://localhost:8080/tekton/"
-  echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
-  echo ""
+elif [[ $CICD == "argocd" ]]; then
+  echo "ArgoCD is available at http://localhost:8080/argocd"
+  echo "The initial login credentials are admin:$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2)"
+elif [[ $CICD == "concourse" ]]; then
   echo "Concourse is not playing along right now, it seems to work only on a root path. Nothing another port-forward can't fix!"
   echo $'kubectl port-forward `kubectl get pods --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^concourse-web\"` <port>:8080 &'
   echo "The login for concourse is test:test"
+fi
+  echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
 }
 
 

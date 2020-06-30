@@ -143,6 +143,19 @@ install_tekton() {
                 -f cd/tekton/sample-pipeline/tekton/pipeline.yaml
 }
 
+
+install_argocd() {
+  kubectl create namespace argocd
+  kubectl apply -n argocd -f cd/argocd/config.yaml \
+                          -f cd/argocd/secrets.yaml \
+                          -f cd/argocd/roles.yaml \
+                          -f cd/argocd/deployment.yaml \
+                          -f cd/argocd/service.yaml 
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f cd/argocd/${INGRESS}-ingress.yaml
+  fi
+}
+
 install_drone() {
   echo "Installing Drone CI"
   echo "stub"
@@ -305,6 +318,8 @@ install_ci() {
     install_tekton
   elif [[ $CICD == "rio" ]]; then
     install_rio
+  elif [[ $CICD == "argocd" ]]; then
+    install_argocd
   elif [[ $CICD == "drone" ]]; then
     install_drone
   elif [[ $CICD == "concourse" ]]; then
