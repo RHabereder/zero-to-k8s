@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: minio
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /minio(/|$)(.*)
+        backend:
+          serviceName: minio-service
+          servicePort: 9000
