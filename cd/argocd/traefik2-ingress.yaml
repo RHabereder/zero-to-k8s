@@ -1,0 +1,26 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argocd-ingressroute
+  namespace: argocd
+spec:
+  entryPoints:
+    - http
+  routes:
+  - match: Host(`localhost`) && PathPrefix(`/argocd`)
+    kind: Rule
+    services:
+      - name: argocd-server
+        port: 80
+    # middlewares:
+    # - name: argocd-stripprefix
+# ---
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: argocd-stripprefix
+#   namespace: argocd
+# spec:
+#   stripPrefix:
+#     prefixes:
+#       - /argocd

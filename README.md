@@ -37,10 +37,10 @@ Git Bash/MinGW (This one is pretty hard to work with actually. It randomly disli
 Edit startup.sh and add/remove stuff you need/want in
 
 ```bash
-#Possible Single Values: tekton,rio,drone,concourse
+#Possible Single Values: tekton|rio|drone|concourse|argocd
 CI="tekton"
 
-#Possible Single Values: traefik,traefik2,nginx,istio,none
+#Possible Single Values: traefik|traefik2|nginx|istio|none
 INGRESS="traefik2"
 
 #Possible values: (Spaced-Delimited Multiple possible): prometheus grafana jaeger registry k8s-dashboard rio-dashboard istio
@@ -76,11 +76,12 @@ After the installation your console should tell you the different URLs you shoul
 * Base:
   * [k3d](https://github.com/rancher/k3d) - The Tool used to deploy kubernetes
   * [rancher](https://rancher.com/) - Run Kubernetes Everywhere with Rancher
+  * [argocd](https://argoproj.github.io/argo-cd/) - Run Kubernetes Everywhere with Rancher
 * CD:
   * [TektonCD](https://github.com/tektoncd/pipeline) - The preferred tool to run your ci/cd
   * [Tekton Dashboard](https://github.com/tektoncd/dashboard) - Dashboard for Tekton Pipelines
   * [Concourse CI](https://concourse-ci.org/) - An amazing Open Source continuous Thing-Doer
-  * [rancher rio](https://rio.io/) - The Rancher Application Deployment Engine for Kubernetes
+  * [rancher rio](https://rio.io/) - Declarative GitOps CD for Kubernetes
 * Ingress:
   * [NGINX](https://www.nginx.com/products/nginx/kubernetes-ingress-controller/) - Production-Grade Ingress Controller for Kubernetes
   * [Traefik](https://traefik.io/) - My favorite Ingress Controller and proxy
