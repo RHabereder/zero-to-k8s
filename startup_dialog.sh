@@ -127,11 +127,12 @@ choose_ingress() {
 }
 
 choose_tools() {
-  TOOLS=`dialog --checklist "Install Tools" 0 0 7 \
+  TOOLS=`dialog --checklist "Install Tools" 0 0 8 \
         grafana "Open source analytics and monitoring solution for every database" on \
         prometheus "Monitoring system & time series database" on \
         jaeger "Open source, end-to-end distributed tracing" on \
         registry "A private Docker Registry if you don't have one at hand for testing" on \
+        minio "High Performance, Kubernetes Native Object Storage" on \
         k8s-dashboard "General purpose, web-based UI for Kubernetes clusters" on \
         rio-dashboard "Rancher RIOs built-in dashboard" off \
         istio "Connect, secure, control, and observe services with Istio Servicemesh" off \
@@ -267,6 +268,16 @@ install_jaeger() {
   fi
 }
 
+install_minio() {
+  kubectl apply -f storage/minio/credentials-secret.yaml \
+                -f storage/minio/operator.yaml \
+                -f storage/minio/instance.yaml \
+                -f storage/minio/service.yaml 
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f storage/minio/${INGRESS}-ingress.yaml
+  fi
+}
+
 start_k3d_cluster() {
 
   if [[ $TOOLS == *"registry"* ]]; then
@@ -363,12 +374,15 @@ install_tools() {
   if [[ $TOOLS == *"jaeger"* ]]; then
     install_jaeger
   fi
+  if [[ $TOOLS == *"minio"* ]]; then
+    install_minio
+  fi
   if [[ $TOOLS == *"k8s-dashboard"* ]]; then
     install_k8s_dashboard
   fi
   if [[ $TOOLS == *"rio-dashboard"* ]]; then
     install_rio_dashboard
-  fi
+  fi  
 }
 
 verify_binaries() {
@@ -415,7 +429,7 @@ notify_user() {
 
 cleanup() {
   echo "Caught CTRL+C, aborting and cleaning up"
-  k3d delete --name local
+  k3d delete --name dev
   if [[ -d $PWD/$K3D_MOUNT_DIR ]]; then
     rm -rf $PWD/$K3D_MOUNT_DIR
   fi

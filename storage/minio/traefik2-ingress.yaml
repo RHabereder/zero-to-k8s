@@ -1,0 +1,25 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio-ingress-route
+  namespace: default
+spec:
+  entryPoints:
+    - http
+  routes:
+  - match: Host(`localhost`) && PathPrefix(`/minio`)
+    kind: Rule
+    services:
+    - name: minio-service
+      port: 9000
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: minio-stripprefix
+  namespace: default
+spec:
+  stripPrefix:
+    prefixes:
+      - /minio
