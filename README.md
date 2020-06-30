@@ -76,12 +76,12 @@ After the installation your console should tell you the different URLs you shoul
 * Base:
   * [k3d](https://github.com/rancher/k3d) - The Tool used to deploy kubernetes
   * [rancher](https://rancher.com/) - Run Kubernetes Everywhere with Rancher
-  * [argocd](https://argoproj.github.io/argo-cd/) - Run Kubernetes Everywhere with Rancher
 * CD:
   * [TektonCD](https://github.com/tektoncd/pipeline) - The preferred tool to run your ci/cd
   * [Tekton Dashboard](https://github.com/tektoncd/dashboard) - Dashboard for Tekton Pipelines
   * [Concourse CI](https://concourse-ci.org/) - An amazing Open Source continuous Thing-Doer
-  * [rancher rio](https://rio.io/) - Declarative GitOps CD for Kubernetes
+  * [rancher rio](https://rio.io/) - The Application Deployment Engine for Kubernetes
+  * [argocd](https://argoproj.github.io/argo-cd/) - Declarative GitOps CD for Kubernetes
 * Ingress:
   * [NGINX](https://www.nginx.com/products/nginx/kubernetes-ingress-controller/) - Production-Grade Ingress Controller for Kubernetes
   * [Traefik](https://traefik.io/) - My favorite Ingress Controller and proxy
