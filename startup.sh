@@ -1,16 +1,22 @@
 #!/bin/bash
 set -e
 
-#Possible Single Values: tekton,rio,drone,concourse
+trap cleanup SIGINT
+
+#Possible Single Values: tekton|rio|drone|concourse
 CI="tekton"
 
-#Possible Single Values: traefik,traefik2,nginx,istio,none
+#Possible Single Values: traefik|traefik2|nginx|istio|none
 INGRESS="traefik2"
 
-#Possible values: (Spaced-Delimited Multiple possible): prometheus grafana jaeger registry k8s-dashboard rio-dashboard istio
-TOOLS="prometheus grafana jaeger registry k8s-dashboard"
-HOSTS_FILE_LOCATION=""
+#Possible values: (Spaced-Delimited Multiple possible): prometheus grafana jaeger registry minio k8s-dashboard rio-dashboard istio
+TOOLS="prometheus grafana jaeger registry minio k8s-dashboard"
 
+# If you want to mount some files through, K3D can bindmount a dir for you in $PWD/$K3D_MOUNT_DIR
+# Currently used only for tekton pipelines
+K3D_MOUNT_DIR="k3dshare"
+HOSTS_FILE_LOCATION=""
+ISTIO_VERSION=1.5.4
 prep_setup() {
   echo "Preparing Setup"
 
@@ -54,6 +60,7 @@ install_binaries() {
   export PATH=$PATH:`pwd`/bin
 
   if ! [[ -f bin/kubectl ]]; then	  
+    echo $KUBECTL_URL
     curl -L $KUBECTL_URL -o bin/kubectl
   fi
   if ! [[ -f bin/k3d ]]; then	  
@@ -96,6 +103,7 @@ install_binaries() {
   find . -type f -exec chmod +x {} +
 }
 
+
 install_traefik() {
   echo "Installing Traefik"
   #We could also use the k3d built-in traefik helm-chart by removing the --no-deploy=traefik server-arg
@@ -111,7 +119,7 @@ install_traefik2() {
 
 install_nginx() {
   echo "Installing NGinX"
-  kubetcl apply -f ingress/nginx/mandatory.yaml 
+  kubectl apply -f ingress/nginx/mandatory.yaml 
 }
 
 
@@ -126,6 +134,13 @@ install_tekton() {
   if [[ ! "$INGRESS" == "none" ]]; then
     kubectl apply -f cd/tekton/${INGRESS}-ingress.yaml
   fi
+
+  kubectl apply -f cd/tekton/sample-pipeline/k8s/svc-account.yaml \
+                -f cd/tekton/sample-pipeline/k8s/svc-credentials.yaml \
+                -f cd/tekton/sample-pipeline/tekton/build-task.yaml \
+                -f cd/tekton/sample-pipeline/tekton/deploy-task.yaml \
+                -f cd/tekton/sample-pipeline/tekton/git-task.yaml \
+                -f cd/tekton/sample-pipeline/tekton/pipeline.yaml
 }
 
 install_drone() {
@@ -160,9 +175,10 @@ install_rio_dashboard() {
 }
 
 install_istio() {
-
-  curl -L https://istio.io/downloadIstio | sh -
-  $PWD/istio-1.5.4/bin/istioctl manifest apply --set profile=demo
+  
+  curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
+  $PWD/istio-${ISTIO_VERSION}/bin/istioctl manifest apply --set profile=demo
+  cp $PWD/istio-${ISTIO_VERSION}/bin/istioctl $PWD/bin/
 }
 
 install_concourse() {
@@ -215,11 +231,20 @@ install_jaeger() {
   fi
 }
 
+install_minio() {
+  kubectl apply -f storage/minio/credentials-secret.yaml \
+                -f storage/minio/operator.yaml \
+                -f storage/minio/instance.yaml \
+                -f storage/minio/service.yaml 
+  if [[ ! "$INGRESS" == "none" ]]; then
+    kubectl apply -f storage/minio/${INGRESS}-ingress.yaml
+  fi
+}
+
 start_k3d_cluster() {
-  echo "Starting k3d Cluster"
 
   if [[ $TOOLS == *"registry"* ]]; then
-    k3d create --server-arg="--no-deploy=traefik" --enable-registry --name dev
+    K3D_ARGS="$K3D_ARGS --enable-registry"
 
     if [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
       HOSTS_FILE_LOCATION="/etc/hosts"
@@ -230,13 +255,18 @@ start_k3d_cluster() {
     echo "1) Make sure to push your images to registry.local:5000/some/awesomeimage:tag"
     echo "2) Add \"127.0.0.1  registry.local\" to your hosts file at $HOSTS_FILE_LOCATION"
     echo "3) Add registry.local:5000 to your Docker Daemons insecure-registries array"
-  else
-    k3d create --server-arg="--no-deploy=traefik" --name dev
   fi
-  
-  #k3d create --server-arg="--no-deploy=traefik" --name dev --api-port 6550 --publish 80:80 --publish 443:443 --publish 9443:9443 --publish 9080:9080
-  echo "wait a bit for k3d to start up"
+  if [[ $CICD == *"tekton"* ]]; then
+    mkdir -p $PWD/$K3D_MOUNT_DIR
+    K3D_ARGS="$K3D_ARGS --volume $PWD/$K3D_MOUNT_DIR:/var/k3dshare/"
+  fi
+  echo "Starting k3d Cluster with args: $K3D_ARGS"
+  k3d create $K3D_ARGS  echo "wait a bit for k3d to start up"
   sleep 20
+}
+
+patch_coredns() {
+  kubectl -n kube-system patch cm coredns --patch "$(sed "s/REGISTRY_IP/$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' /k3d-registry)/g" tools/registry/patch_coredns.yaml)"
 }
 
 config_k3d_cluster() {
@@ -252,6 +282,10 @@ config_k3d_cluster() {
   elif [[ "$SHELL" == "MSYS" ]]; then
     echo "Converting paths to POSIX, because derp"
     export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')
+  fi
+
+  if [[ $TOOLS == *"registry"* ]]; then
+    patch_coredns
   fi
 }
 
@@ -303,12 +337,15 @@ install_tools() {
   if [[ $TOOLS == *"jaeger"* ]]; then
     install_jaeger
   fi
+  if [[ $TOOLS == *"minio"* ]]; then
+    install_minio
+  fi
   if [[ $TOOLS == *"k8s-dashboard"* ]]; then
     install_k8s_dashboard
   fi
   if [[ $TOOLS == *"rio-dashboard"* ]]; then
     install_rio_dashboard
-  fi
+  fi  
 }
 
 verify_binaries() {
@@ -331,19 +368,35 @@ notify_user() {
   echo ""
   echo ""
   echo $'To access apps behind your ingress, run the following command: '
+  if [[ $INGRESS == "nginx" ]]; then
+  echo $'kubectl port-forward -n ingress-nginx `kubectl get pods -n ingress-nginx --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^nginx-ingress\"` 8080:80 8443:443 &'
+  elif [[ $INGRESS == "traefik" ]]; then
   echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik\"` 8080:80 8443:443 8081:8080 &'
-  echo ""
-  echo "Tekton Dashbaord is available at http://localhost:8080/tekton/"
   echo "Traefik Dashboard is available at http://localhost:8080/traefik"
+  elif [[ $INGRESS == "traefik2" ]]; then
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n kube-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^traefik\"` 8080:80 8443:443 8081:8080 &'
   echo "Traefik2 Dashboard is available at http://localhost:8081/dashboard/"
+  elif [[ $INGRESS == "istio" ]]; then
+  echo $'kubectl port-forward -n kube-system `kubectl get pods -n istio-system --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^istio-ingressgateway\"` 8080:80 8443:443 8081:8080 &'
+  echo "To access the various Istio Dashboards, use $PWD/istio-${ISTIO_VERSION}/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
+  fi
+
+  echo "Tekton Dashboard is available at http://localhost:8080/tekton/"
   echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
-  echo "To access the various Istio Dashboards, use $PWD/istio-1.5.4/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
   echo ""
   echo "Concourse is not playing along right now, it seems to work only on a root path. Nothing another port-forward can't fix!"
   echo $'kubectl port-forward `kubectl get pods --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^concourse-web\"` <port>:8080 &'
   echo "The login for concourse is test:test"
 }
 
+
+cleanup() {
+  echo "Caught CTRL+C, aborting and cleaning up"
+  k3d delete --name dev
+  if [[ -d $PWD/$K3D_MOUNT_DIR ]]; then
+    rm -rf $PWD/$K3D_MOUNT_DIR
+  fi
+}
 
 prep_setup
 install_binaries
