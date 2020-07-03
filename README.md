@@ -92,6 +92,8 @@ After the installation your console should tell you the different URLs you shoul
   * [Jaeger](https://www.jaegertracing.io/) - An open source, end-to-end distributed tracing tool
   * [k8s-dashboard](https://github.com/kubernetes/dashboard) - A general purpose, web-based UI for Kubernetes clusters
   * [MinIO](https://min.io/) - High Performance, Kubernetes Native Object Storage
+* DBs:
+  * [Apache Cassandra](https://cassandra.apache.org/) -  Manage massive amounts of data, fast, without losing sleep
 * Hopefully even more in the future!
 
 ## Authors

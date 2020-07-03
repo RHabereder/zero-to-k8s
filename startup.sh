@@ -12,6 +12,10 @@ INGRESS="traefik2"
 #Possible values: (Spaced-Delimited Multiple possible): prometheus grafana jaeger registry minio k8s-dashboard rio-dashboard istio
 TOOLS="prometheus grafana jaeger registry minio k8s-dashboard"
 
+#Possible values: (Spaced-Delimited Multiple possible): cassandra
+DB=""
+
+
 # If you want to mount some files through, K3D can bindmount a dir for you in $PWD/$K3D_MOUNT_DIR
 # Currently used only for tekton pipelines
 K3D_MOUNT_DIR="k3dshare"
@@ -254,6 +258,12 @@ install_minio() {
   fi
 }
 
+install_cassandra() {
+  kubectl apply -f db/cassandra/service.yaml \
+                -f db/cassandra/deployment-stateful.yaml \
+                -f db/cassandra/deployment-cqlsh.yaml
+}
+
 start_k3d_cluster() {
 
   if [[ $TOOLS == *"registry"* ]]; then
@@ -363,6 +373,15 @@ install_tools() {
   fi  
 }
 
+install_db() {
+    if [[ ! "$DB" == "none" ]]; then
+      kubectl create namespace db
+      if [[ "$DB" == "cassandra" ]]; then
+        install_cassandra
+      fi
+    fi
+}
+
 verify_binaries() {
   echo "Verifying installed binaries"
   kubectl version
@@ -396,6 +415,15 @@ notify_user() {
   echo "To access the various Istio Dashboards, use $PWD/istio-${ISTIO_VERSION}/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
   fi
 
+  if [[ $DB == "cassandra" ]]; then
+    echo ""
+    echo "You can check if cassandra is ready with this command:"
+    echo $'kubectl rollout status statefulset/cassandra -n db'
+    echo "To connect to your cassandra via cqlsh, just use the following command:"
+    echo $'kubectl -n db exec -ti $(kubectl get pods -n db | grep cqlsh) -- cqlsh cassandra.db.svc.cluster.local'
+    echo ""
+  fi
+
   echo "Tekton Dashboard is available at http://localhost:8080/tekton/"
   echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
   echo ""
@@ -422,6 +450,7 @@ config_k3d_cluster
 install_ingress
 install_ci
 install_tools
+install_db
 
 verify_binaries
 notify_user

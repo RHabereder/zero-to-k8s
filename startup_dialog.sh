@@ -12,6 +12,7 @@ K3D_MOUNT_DIR="k3dshare"
 CICD=""
 INGRESS=""
 TOOLS=""
+DB=""
 HOSTS_FILE_LOCATION=""
 ISTIO_VERSION=1.5.4
 prep_setup() {
@@ -112,7 +113,6 @@ choose_ci() {
         concourse "An open-source continuous thing-doer" off \
         3>&1 1>&2 2>&3`
   dialog --clear
-  #clear
 }
 
 choose_ingress() {
@@ -140,6 +140,14 @@ choose_tools() {
         3>&1 1>&2 2>&3`
   dialog --clear
   #clear  
+}
+
+choose_db() {
+  DB=`dialog --checklist "Install DB" 0 0 2 \
+        cassandra "Manage massive amounts of data, fast, without losing sleep" off \
+        none "If you don't want any DB" off \
+        3>&1 1>&2 2>&3`
+  dialog --clear
 }
 
 install_traefik() {
@@ -291,6 +299,12 @@ install_minio() {
   fi
 }
 
+install_cassandra() {
+  kubectl apply -f db/cassandra/service.yaml \
+                -f db/cassandra/deployment-stateful.yaml \
+                -f db/cassandra/deployment-cqlsh.yaml
+}
+
 start_k3d_cluster() {
 
   if [[ $TOOLS == *"registry"* ]]; then
@@ -400,6 +414,15 @@ install_tools() {
   fi  
 }
 
+install_db() {
+    if [[ ! "$DB" == "none" ]]; then
+      kubectl create namespace db
+      if [[ "$DB" == "cassandra" ]]; then
+        install_cassandra
+      fi
+    fi
+}
+
 verify_binaries() {
   echo "Verifying installed binaries"
   kubectl version
@@ -433,16 +456,25 @@ notify_user() {
   echo "To access the various Istio Dashboards, use $PWD/istio-${ISTIO_VERSION}/bin/istioctl dashboard, or kubectl port-forward like the following prometheus example."  
   fi
 
-if [[ $CICD == "tekton" ]]; then
-  echo "Tekton Dashboard is available at http://localhost:8080/tekton/"
-elif [[ $CICD == "argocd" ]]; then
-  echo "ArgoCD is available at http://localhost:8080/argocd"
-  echo "The initial login credentials are admin:$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2)"
-elif [[ $CICD == "concourse" ]]; then
-  echo "Concourse is not playing along right now, it seems to work only on a root path. Nothing another port-forward can't fix!"
-  echo $'kubectl port-forward `kubectl get pods --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^concourse-web\"` <port>:8080 &'
-  echo "The login for concourse is test:test"
-fi
+  if [[ $CICD == "tekton" ]]; then
+    echo "Tekton Dashboard is available at http://localhost:8080/tekton/"
+  elif [[ $CICD == "argocd" ]]; then
+    echo "ArgoCD is available at http://localhost:8080/argocd"
+    echo "The initial login credentials are admin:$(kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2)"
+  elif [[ $CICD == "concourse" ]]; then
+    echo "Concourse is not playing along right now, it seems to work only on a root path. Nothing another port-forward can't fix!"
+    echo $'kubectl port-forward `kubectl get pods --template \'{{range .items}}{{.metadata.name}}{{\"\\n\"}}{{end}}\' | grep \"^concourse-web\"` <port>:8080 &'
+    echo "The login for concourse is test:test"
+  fi
+
+  if [[ $DB == "cassandra" ]]; then
+    echo ""
+    echo "You can check if cassandra is ready with this command:"
+    echo $'kubectl rollout status statefulset/cassandra -n db'
+    echo "To connect to your cassandra via cqlsh, just use the following command:"
+    echo $'kubectl -n db exec -ti $(kubectl get pods -n db | grep cqlsh) -- cqlsh cassandra.db.svc.cluster.local'
+    echo ""
+  fi
   echo "K8S Dashboard is available at https://localhost:8081/dashboard/"
 }
 
@@ -461,6 +493,7 @@ install_binaries
 choose_ci
 choose_ingress
 choose_tools
+choose_db
 
 start_k3d_cluster
 config_k3d_cluster
@@ -468,6 +501,7 @@ config_k3d_cluster
 install_ingress
 install_ci
 install_tools
+install_db
 
 verify_binaries
 notify_user
