@@ -25,34 +25,34 @@ prep_setup() {
   echo "Preparing Setup"
 
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    if grep -q Microsoft /proc/version; then
+    if grep -q -i Microsoft /proc/version; then
       KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
       K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
-      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Windows_x86_64.zip"
-      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-windows-amd64"
-      HELM_URL="https://get.helm.sh/helm-v3.2.1-windows-amd64.zip"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Windows_x86_64.zip"
+      RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-windows-amd64"
+      HELM_URL="https://get.helm.sh/helm-v3.4.1-windows-amd64.zip"
       DRONE_URL=""
-      SHELL="WSL"
+      DISTROSHELL="WSL"
     else
-      SHELL="BASH"
+      DISTROSHELL="BASH"
       KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
       K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
-      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Linux_x86_64.tar.gz"
-      RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.1/rio-linux-amd64"
-      HELM_URL="https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Linux_x86_64.tar.gz"
+      RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-linux-amd64"
+      HELM_URL="https://get.helm.sh/helm-v3.4.1-linux-amd64.tar.gz"
       DRONE_URL=""
     fi
   elif [[ $OSTYPE == "darwin"* ]]; then
     KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
     K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-darwin-amd64"
-    TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.8.0/tkn_0.8.0_Darwin_x86_64.tar.gz"
-    RIO_URL="https://github.com/rancher/rio/releases/download/v0.7.0/rio-darwin-amd64"
-    HELM_URL="https://get.helm.sh/helm-v3.2.1-darwin-amd64.tar.gz"
+    TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Darwin_x86_64.tar.gz"
+    RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-darwin-amd64"
+    HELM_URL="https://get.helm.sh/helm-v3.4.1-darwin-amd64.tar.gz"
     DRONE_URL=""
-    SHELL="ZSH"
+    DISTROSHELL="ZSH"
   fi
 
-  echo "Detected $SHELL on $OSTYPE"
+  echo "Detected $DISTROSHELL on $OSTYPE"
 }
 
 install_binaries() {
@@ -75,10 +75,10 @@ install_binaries() {
   fi
 
   if ! [[ -f bin/tkn ]]; then	  
-    if [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
+    if [[ "$DISTROSHELL" == "BASH" || "$DISTROSHELL" == "ZSH" ]]; then
       curl -L $TKN_URL | tar xzv tkn
       mv tkn bin/
-    elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
+    elif [[ "$DISTROSHELL" == "WSL" || "$DISTROSHELL" == "MSYS" ]]; then
       curl -L $TKN_URL -o tkn.zip
       unzip tkn.zip tkn.exe 
       mv tkn.exe bin/tkn
@@ -87,16 +87,16 @@ install_binaries() {
   fi
 
   if ! [[ -f bin/helm ]]; then	 
-    if [[ "$SHELL" == "BASH" || $SHELL == "ZSH" ]]; then
-      if [[ "$SHELL" == "ZSH" ]]; then
+    if [[ "$DISTROSHELL" == "BASH" || $DISTROSHELL == "ZSH" ]]; then
+      if [[ "$DISTROSHELL" == "ZSH" ]]; then
         DISTRI="darwin"
-      elif [[ "$SHELL" == "ZSH" ]]; then 
+      elif [[ "$DISTROSHELL" == "ZSH" ]]; then 
         DISTRI="linux"
       fi
       curl -L $HELM_URL | tar xzv ${DISTRI}-amd64/helm
       mv ${DISTRI}-amd64/helm bin/
       rmdir ${DISTRI}-amd64
-    elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
+    elif [[ "$DISTROSHELL" == "WSL" || "$DISTROSHELL" == "MSYS" ]]; then
       curl -L $HELM_URL -o helm.zip
       unzip helm.zip windows-amd64/helm.exe 
       mv windows-amd64/helm.exe bin/helm
@@ -269,9 +269,9 @@ start_k3d_cluster() {
   if [[ $TOOLS == *"registry"* ]]; then
     K3D_ARGS="$K3D_ARGS --enable-registry"
 
-    if [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
+    if [[ "$DISTROSHELL" == "BASH" || "$DISTROSHELL" == "ZSH" ]]; then
       HOSTS_FILE_LOCATION="/etc/hosts"
-    elif [[ "$SHELL" == "WSL" || "$SHELL" == "MSYS" ]]; then
+    elif [[ "$DISTROSHELL" == "WSL" || "$DISTROSHELL" == "MSYS" ]]; then
       HOSTS_FILE_LOCATION="C:\\Windows\\system32\\drivers\\etc\\hosts"
     fi
     echo "Things to do to use the local registry: "
@@ -294,15 +294,15 @@ patch_coredns() {
 
 config_k3d_cluster() {
   echo "Configuring k3d cluster"
-  if [[ "$SHELL" == "WSL" ]]; then
+  if [[ "$DISTROSHELL" == "WSL" ]]; then
     echo "Need to create %USERPROFILE%/.kube/config, because somehow kubectl is now broken"
     WINHOME=$(wslpath $(cmd.exe /c "<nul set /p=%UserProfile%" 2>/dev/null))
     mkdir -p $WINHOME/.kube
     cp $(wslpath -u $(k3d get-kubeconfig --name dev)) $WINHOME/.kube/config
     export KUBECONFIG=$WINHOME/.kube/config
-  elif [[ "$SHELL" == "BASH" || "$SHELL" == "ZSH" ]]; then
+  elif [[ "$DISTROSHELL" == "BASH" || "$DISTROSHELL" == "ZSH" ]]; then
     export KUBECONFIG=$(k3d get-kubeconfig --name dev)
-  elif [[ "$SHELL" == "MSYS" ]]; then
+  elif [[ "$DISTROSHELL" == "MSYS" ]]; then
     echo "Converting paths to POSIX, because derp"
     export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')
   fi
@@ -394,7 +394,7 @@ notify_user() {
   echo "Now export the following lines and you are good to go!"
   echo 'export PATH=$PATH:`pwd`/bin'
   echo 'source <(kubectl completion bash)'
-  if [[ "$SHELL" == "BASH" ]]; then
+  if [[ "$DISTROSHELL" == "BASH" ]]; then
     echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev)"
   fi
 
