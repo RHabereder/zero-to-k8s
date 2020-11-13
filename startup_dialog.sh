@@ -3,8 +3,8 @@ set -e
 
 trap cleanup SIGINT
 
-#Global K3D Args for k3d create $K3D_ARGS
-K3D_ARGS='--server-arg="--no-deploy=traefik" --name dev'
+#Global K3D Args for k3d cluster create $K3D_ARGS
+K3D_ARGS='dev --k3s-server-arg="--no-deploy=traefik"'
 
 # If you want to mount some files through, K3D can bindmount a dir for you in $PWD/$K3D_MOUNT_DIR
 # Currently used only for tekton pipelines
@@ -19,9 +19,9 @@ prep_setup() {
   echo "Preparing Setup"
 
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    if grep -q -i Microsoft /proc/version; then
+    if grep -q Microsoft /proc/version; then
       KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
-      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-windows-amd64.exe"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/v3.2.1/k3d-windows-amd64.exe"
       TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Windows_x86_64.zip"
       RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-windows-amd64"
       HELM_URL="https://get.helm.sh/helm-v3.4.1-windows-amd64.zip"
@@ -30,7 +30,7 @@ prep_setup() {
     else
       DISTROSHELL="BASH"
       KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-      K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-linux-amd64"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/v3.2.1/k3d-linux-amd64"
       TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Linux_x86_64.tar.gz"
       RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-linux-amd64"
       HELM_URL="https://get.helm.sh/helm-v3.4.1-linux-amd64.tar.gz"
@@ -38,7 +38,7 @@ prep_setup() {
     fi
   elif [[ $OSTYPE == "darwin"* ]]; then
     KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
-    K3D_URL="https://github.com/rancher/k3d/releases/download/v1.7.0/k3d-darwin-amd64"
+    K3D_URL="https://github.com/rancher/k3d/releases/download/v3.2.1/k3d-darwin-amd64"
     TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Darwin_x86_64.tar.gz"
     RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-darwin-amd64"
     HELM_URL="https://get.helm.sh/helm-v3.4.1-darwin-amd64.tar.gz"
@@ -308,27 +308,31 @@ install_cassandra() {
 start_k3d_cluster() {
 
   if [[ $TOOLS == *"registry"* ]]; then
-    K3D_ARGS="$K3D_ARGS --enable-registry"
+    echo "The registry-feature is not supported in K3D 3.x as of yet."
+    echo "If you really need it, I recommend going back to 1.7.0"
+    #K3D_ARGS="$K3D_ARGS --enable-registry"
 
     if [[ "$DISTROSHELL" == "BASH" || "$DISTROSHELL" == "ZSH" ]]; then
       HOSTS_FILE_LOCATION="/etc/hosts"
     elif [[ "$DISTROSHELL" == "WSL" || "$DISTROSHELL" == "MSYS" ]]; then
       HOSTS_FILE_LOCATION="C:\\Windows\\system32\\drivers\\etc\\hosts"
     fi
-    echo "Things to do to use the local registry: "
-    echo "1) Make sure to push your images to registry.local:5000/some/awesomeimage:tag"
-    echo "2) Add \"127.0.0.1  registry.local\" to your hosts file at $HOSTS_FILE_LOCATION"
-    echo "3) Add registry.local:5000 to your Docker Daemons insecure-registries array"
+    #echo "Things to do to use the local registry: "
+    #echo "1) Make sure to push your images to registry.local:5000/some/awesomeimage:tag"
+    #echo "2) Add \"127.0.0.1  registry.local\" to your hosts file at $HOSTS_FILE_LOCATION"
+    #echo "3) Add registry.local:5000 to your Docker Daemons insecure-registries array"
   fi
   if [[ $CICD == *"tekton"* ]]; then
     mkdir -p $PWD/$K3D_MOUNT_DIR
     K3D_ARGS="$K3D_ARGS --volume $PWD/$K3D_MOUNT_DIR:/var/k3dshare/"
   fi
   echo "Starting k3d Cluster with args: $K3D_ARGS"
-  k3d create $K3D_ARGS  echo "wait a bit for k3d to start up"
+  k3d cluster create $K3D_ARGS  
+  echo "wait a bit for k3d to start up"
   sleep 20
 }
 
+# This is technically deprecated, since K3D 3.x does it out of the box
 patch_coredns() {
   kubectl -n kube-system patch cm coredns --patch "$(sed "s/REGISTRY_IP/$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' /k3d-registry)/g" tools/registry/patch_coredns.yaml)"
 }
@@ -339,18 +343,21 @@ config_k3d_cluster() {
     echo "Need to create %USERPROFILE%/.kube/config, because somehow kubectl is now broken"
     WINHOME=$(wslpath $(cmd.exe /c "<nul set /p=%UserProfile%" 2>/dev/null))
     mkdir -p $WINHOME/.kube
-    cp $(wslpath -u $(k3d get-kubeconfig --name dev)) $WINHOME/.kube/config
-    export KUBECONFIG=$WINHOME/.kube/config
-  elif [[ "$DISTROSHELL" == "BASH" || "$DISTROSHELL" == "ZSH" ]]; then
-    export KUBECONFIG=$(k3d get-kubeconfig --name dev)
+    k3d kubeconfig get dev > $WINHOME/.kube/config_k3d
+    export KUBECONFIG=$WINHOME/.kube/config_k3d
+  elif [[ "$DISTROSHELL" == "BASH" || "$DISTROSHELL" == "ZSH" || "$DISTROSHELL" == "WSL2" ]]; then
+    mkdir -p ~/.kube/
+    k3d kubeconfig get dev > ~/.kube/config_k3d
+    export KUBECONFIG=~/.kube/config_k3d
   elif [[ "$DISTROSHELL" == "MSYS" ]]; then
-    echo "Converting paths to POSIX, because derp"
-    export KUBECONFIG=$(k3d get-kubeconfig --name dev | sed 's_\\_\/_g' | sed 's_C:_/c_')
+    echo "I hate MinGW, GitBash, MSYS, so this is an empty stub as of now"
+    #echo "Converting paths to POSIX, because derp"
+    #export KUBECONFIG=$(k3d kubeconfig get dev | sed 's_\\_\/_g' | sed 's_C:_/c_')
   fi
 
-  if [[ $TOOLS == *"registry"* ]]; then
-    patch_coredns
-  fi
+  #if [[ $TOOLS == *"registry"* ]]; then
+  #  patch_coredns
+  #fi
 }
 
 install_k8s_dashboard() {
@@ -436,7 +443,7 @@ notify_user() {
   echo 'export PATH=$PATH:`pwd`/bin'
   echo 'source <(kubectl completion bash)'
   if [[ "$DISTROSHELL" == "BASH" ]]; then
-    echo "export KUBECONFIG=$(k3d get-kubeconfig --name dev)"
+    echo "export KUBECONFIG=~/.kube/config_k3d"
   fi
 
   echo ""
