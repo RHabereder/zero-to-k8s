@@ -84,7 +84,7 @@ install_binaries() {
     if [[ "$DISTROSHELL" == "BASH" || $DISTROSHELL == "ZSH" ]]; then
       if [[ "$DISTROSHELL" == "ZSH" ]]; then
         DISTRI="darwin"
-      elif [[ "$DISTROSHELL" == "ZSH" ]]; then 
+      elif [[ "$DISTROSHELL" == "BASH" ]]; then 
         DISTRI="linux"
       fi
       curl -L $HELM_URL | tar xzv ${DISTRI}-amd64/helm
