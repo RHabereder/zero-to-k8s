@@ -3,6 +3,14 @@ set -e
 
 trap cleanup SIGINT
 
+# Version Pinning
+KUBECTL_VERSION=v1.18.0
+K3D_VERSION=v3.2.1
+TEKTON_VERSION=v0.13.1
+RIO_VERSION=v0.8.0
+HELM_VERSION=v3.4.1
+DRONE_VERSION=none
+
 #Global K3D Args for k3d cluster create $K3D_ARGS
 K3D_ARGS='dev --k3s-server-arg="--no-deploy=traefik"'
 
@@ -29,28 +37,28 @@ prep_setup() {
 
   if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if grep -q Microsoft /proc/version; then
-      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/windows/amd64/kubectl.exe"
-      K3D_URL="https://github.com/rancher/k3d/releases/download/v3.2.1/k3d-windows-amd64.exe"
-      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Windows_x86_64.zip"
-      RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-windows-amd64"
-      HELM_URL="https://get.helm.sh/helm-v3.4.1-windows-amd64.zip"
+      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/windows/amd64/kubectl.exe"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-windows-amd64.exe"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/${TEKTON_VERSION}/tkn_${TEKTON_VERSION:1}_Windows_x86_64.zip"
+      RIO_URL="https://github.com/rancher/rio/releases/download/${RIO_VERSION}/rio-windows-amd64"
+      HELM_URL="https://get.helm.sh/helm-${HELM_VERSION}-windows-amd64.zip"
       DRONE_URL=""
       DISTROSHELL="WSL"
     else
       DISTROSHELL="BASH"
-      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-      K3D_URL="https://github.com/rancher/k3d/releases/download/v3.2.1/k3d-linux-amd64"
-      TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Linux_x86_64.tar.gz"
-      RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-linux-amd64"
-      HELM_URL="https://get.helm.sh/helm-v3.4.1-linux-amd64.tar.gz"
+      KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+      K3D_URL="https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64"
+      TKN_URL="https://github.com/tektoncd/cli/releases/download/${TEKTON_VERSION}/tkn_${TEKTON_VERSION:1}_Linux_x86_64.tar.gz"
+      RIO_URL="https://github.com/rancher/rio/releases/download/${RIO_VERSION}/rio-linux-amd64"
+      HELM_URL="https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
       DRONE_URL=""
     fi
   elif [[ $OSTYPE == "darwin"* ]]; then
-    KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
-    K3D_URL="https://github.com/rancher/k3d/releases/download/v3.2.1/k3d-darwin-amd64"
-    TKN_URL="https://github.com/tektoncd/cli/releases/download/v0.13.1/tkn_0.13.1_Darwin_x86_64.tar.gz"
-    RIO_URL="https://github.com/rancher/rio/releases/download/v0.8.0/rio-darwin-amd64"
-    HELM_URL="https://get.helm.sh/helm-v3.4.1-darwin-amd64.tar.gz"
+    KUBECTL_URL="https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/darwin/amd64/kubectl"
+    K3D_URL="https://github.com/rancher/k3d/releases/download/${K3D_VERSION}/k3d-darwin-amd64"
+    TKN_URL="https://github.com/tektoncd/cli/releases/download/${TEKTON_VERSION}/tkn_${TEKTON_VERSION:1}_Darwin_x86_64.tar.gz"
+    RIO_URL="https://github.com/rancher/rio/releases/download/${RIO_VERSION}/rio-darwin-amd64"
+    HELM_URL="https://get.helm.sh/helm-${HELM_VERSION}-darwin-amd64.tar.gz"
     DRONE_URL=""
     DISTROSHELL="ZSH"
   fi
