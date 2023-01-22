@@ -6,6 +6,7 @@ trap cleanup SIGINT
 source .env
 source .functions
 
+sudo apt install dialog -y
 CICD=""
 INGRESS=""
 TOOLS=""
